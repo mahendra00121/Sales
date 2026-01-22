@@ -95,7 +95,7 @@ export function Sidebar() {
                 )}
             </div>
 
-            <div className="flex-1 px-4 overflow-y-auto hover:overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20">
+            <div className="flex-1 px-4 overflow-y-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
                 <div className="space-y-6">
                     {menuGroups.map((group, index) => (
                         <div key={index} className="py-2">
