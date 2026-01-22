@@ -126,19 +126,22 @@ export function Sidebar() {
                 </div>
             </div>
 
-            {!collapsed && (
-                <div className="mt-auto px-6 pt-4 border-t">
-                    <div className="flex items-center gap-4">
-                        <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center border">
-                            <span className="font-bold text-xs">AD</span>
+            <div className={cn("mt-auto border-t pt-4 px-4 pb-4", collapsed ? "flex justify-center" : "")}>
+                <div className={cn("flex items-center", collapsed ? "flex-col gap-4" : "justify-between gap-2")}>
+                    {!collapsed && (
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="h-9 w-9 shrink-0 rounded-full bg-muted flex items-center justify-center border border-input">
+                                <span className="font-bold text-xs">AD</span>
+                            </div>
+                            <div className="text-sm truncate">
+                                <p className="font-medium leading-none">Admin User</p>
+                                <p className="text-xs text-muted-foreground truncate">admin@polytrack.com</p>
+                            </div>
                         </div>
-                        <div className="text-sm">
-                            <p className="font-medium leading-none">Admin User</p>
-                            <p className="text-xs text-muted-foreground">admin@polytrack.com</p>
-                        </div>
-                    </div>
+                    )}
+                    <ModeToggle />
                 </div>
-            )}
+            </div>
         </div>
     );
 
@@ -186,6 +189,10 @@ export function Sidebar() {
                     <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                         PolyTrack
                     </span>
+                </div>
+
+                <div className="ml-auto">
+                    <ModeToggle />
                 </div>
             </div>
         </>
