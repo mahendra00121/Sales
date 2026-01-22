@@ -1,6 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  Area,
+  AreaChart,
+  PieChart,
+  Pie,
+  Cell,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   TrendingUp,
   Users,
@@ -12,7 +35,12 @@ import {
   ShoppingCart,
   FileText,
   Truck,
-  Package
+  Package,
+  MoreHorizontal,
+  BarChart3,
+  LineChart as LineChartIcon,
+  AreaChart as AreaChartIcon,
+  PieChart as PieChartIcon
 } from "lucide-react";
 
 import {
@@ -26,7 +54,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+const chartData = [
+  { name: "Jan", total: 35 },
+  { name: "Feb", total: 45 },
+  { name: "Mar", total: 30 },
+  { name: "Apr", total: 60 },
+  { name: "May", total: 55 },
+  { name: "Jun", total: 70 },
+  { name: "Jul", total: 80 },
+  { name: "Aug", total: 65 },
+  { name: "Sep", total: 50 },
+  { name: "Oct", total: 60 },
+  { name: "Nov", total: 75 },
+  { name: "Dec", total: 90 },
+];
+
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658", "#8dd1e1", "#a4de6c", "#d0ed57", "#83a6ed", "#8e44ad"];
+
 export default function DashboardPage() {
+  const [chartType, setChartType] = useState<"bar" | "line" | "area" | "pie">("bar");
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Section */}
@@ -118,26 +165,118 @@ export default function DashboardPage() {
       {/* Main Analysis Section */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
 
-        {/* Sales Overview Chart (Mock) */}
+        {/* Sales Overview Chart (Dynamic) */}
         <Card className="col-span-4 shadow-md">
-          <CardHeader>
-            <CardTitle>Sales Trend</CardTitle>
-            <CardDescription>Monthly revenue overview for the current year.</CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <div className="h-[240px] w-full flex items-end justify-between gap-2 p-4 pt-10">
-              {/* Simple CSS Bar Chart Mockup */}
-              {[35, 45, 30, 60, 55, 70, 80, 65, 50, 60, 75, 90].map((h, i) => (
-                <div key={i} className="group relative flex-1 bg-primary/10 hover:bg-primary/80 transition-all rounded-t-md" style={{ height: `${h}%` }}>
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border">
-                    ${h}k
-                  </div>
-                </div>
-              ))}
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+              <CardTitle>Sales Trend</CardTitle>
+              <CardDescription>Monthly revenue overview for the current year.</CardDescription>
             </div>
-            <div className="flex justify-between px-4 text-xs text-muted-foreground mt-2 uppercase font-medium">
-              <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
-              <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setChartType("bar")}>
+                  <BarChart3 className="mr-2 h-4 w-4" /> Bar Chart
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setChartType("line")}>
+                  <LineChartIcon className="mr-2 h-4 w-4" /> Line Chart
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setChartType("area")}>
+                  <AreaChartIcon className="mr-2 h-4 w-4" /> Graph Chart
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setChartType("pie")}>
+                  <PieChartIcon className="mr-2 h-4 w-4" /> Pie Chart
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardHeader>
+          <CardContent className="pl-0">
+            <div className="h-[300px] w-full p-2">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === "bar" ? (
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}k`}
+                    />
+                    <Tooltip />
+                    <Bar dataKey="total" fill="currentColor" radius={[4, 4, 0, 0]} className="fill-primary" />
+                  </BarChart>
+                ) : chartType === "line" ? (
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}k`}
+                    />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="total" stroke="currentColor" strokeWidth={2} className="stroke-primary" dot={false} />
+                  </LineChart>
+                ) : chartType === "area" ? (
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value}k`}
+                    />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="total" stroke="currentColor" fill="currentColor" fillOpacity={0.2} className="stroke-primary fill-primary" />
+                  </AreaChart>
+                ) : (
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${((percent || 0.01) * 100).toFixed(0)}%`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="total"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                )}
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
@@ -344,6 +483,6 @@ export default function DashboardPage() {
           </Card>
         </Link>
       </div>
-    </div>
+    </div >
   );
 }
