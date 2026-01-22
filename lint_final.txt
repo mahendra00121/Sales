@@ -1,0 +1,90 @@
+﻿
+> sales-app@0.1.0 lint
+> eslint
+
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\costing\page.tsx
+  122:20  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\costing\page.tsx:122:20
+  120 |
+  121 |     // Watch values for real-time calculation
+> 122 |     const values = watch();
+      |                    ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  123 |
+  124 |     const calculateCost = (data: CostingData) => {
+  125 |         if (!selectedInquiry) return null;  react-hooks/incompatible-library
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\dispatch\page.tsx
+  27:5  warning  'DialogTrigger' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\feasibility\page.tsx
+    7:17  warning  'X' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+    7:20  warning  'AlertTriangle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   16:5   warning  'CardFooter' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   30:5   warning  'DialogTrigger' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   34:10  warning  'Separator' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  289:34  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\feasibility\page.tsx:289:34
+  287 |                                     </RadioGroup>
+  288 |                                 </div>
+> 289 |                                 {form.watch("moldStatus") === "new" && (
+      |                                  ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  290 |                                     <div className="space-y-2">
+  291 |                                         <Label>Development Notes (Lead time, Cost est.)</Label>
+  292 |                                         <Input {...form.register("moldDetails")} placeholder="e.g. 4 Weeks, $2500 est." />  react-hooks/incompatible-library
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\final-qc\page.tsx
+  36:10  warning  'Input' is defined but never used        @typescript-eslint/no-unused-vars
+  40:10  warning  'Tabs' is defined but never used         @typescript-eslint/no-unused-vars
+  40:16  warning  'TabsList' is defined but never used     @typescript-eslint/no-unused-vars
+  40:26  warning  'TabsTrigger' is defined but never used  @typescript-eslint/no-unused-vars
+  40:39  warning  'TabsContent' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\packing\page.tsx
+   8:5  warning  'CheckSquare' is defined but never used  @typescript-eslint/no-unused-vars
+  10:5  warning  'ArrowRight' is defined but never used   @typescript-eslint/no-unused-vars
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\page.tsx
+  5:3  warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\production\page.tsx
+  10:5   warning  'Ruler' is defined but never used                 @typescript-eslint/no-unused-vars
+  11:5   warning  'Eye' is defined but never used                   @typescript-eslint/no-unused-vars
+  51:22  warning  'setProduced' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-inquiry\page.tsx
+  270:54  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-inquiry\page.tsx:270:54
+  268 |                                                 className={cn(
+  269 |                                                     "w-full pl-3 text-left font-normal",
+> 270 |                                                     !form.watch("targetDate") && "text-muted-foreground"
+      |                                                      ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  271 |                                                 )}
+  272 |                                             >
+  273 |                                                 {form.watch("targetDate") ? (  react-hooks/incompatible-library
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-order\page.tsx
+  269:50  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-order\page.tsx:269:50
+  267 |                                             className={cn(
+  268 |                                                 "w-full text-left font-normal",
+> 269 |                                                 !form.watch("poDate") && "text-muted-foreground"
+      |                                                  ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  270 |                                             )}
+  271 |                                         >
+  272 |                                             <CalendarIcon className="mr-2 h-4 w-4" />  react-hooks/incompatible-library
+
+Γ£û 21 problems (0 errors, 21 warnings)
+

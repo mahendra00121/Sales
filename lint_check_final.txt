@@ -1,0 +1,63 @@
+﻿
+> sales-app@0.1.0 lint
+> eslint
+
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\costing\page.tsx
+  122:20  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\costing\page.tsx:122:20
+  120 |
+  121 |     // Watch values for real-time calculation
+> 122 |     const values = watch();
+      |                    ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  123 |
+  124 |     const calculateCost = (data: CostingData) => {
+  125 |         if (!selectedInquiry) return null;  react-hooks/incompatible-library
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\feasibility\page.tsx
+  293:34  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\feasibility\page.tsx:293:34
+  291 |                                     </RadioGroup>
+  292 |                                 </div>
+> 293 |                                 {form.watch("moldStatus") === "new" && (
+      |                                  ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  294 |                                     <div className="space-y-2">
+  295 |                                         <Label>Development Notes (Lead time, Cost est.)</Label>
+  296 |                                         <Input {...form.register("moldDetails")} placeholder="e.g. 4 Weeks, $2500 est." />  react-hooks/incompatible-library
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-inquiry\page.tsx
+  270:54  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-inquiry\page.tsx:270:54
+  268 |                                                 className={cn(
+  269 |                                                     "w-full pl-3 text-left font-normal",
+> 270 |                                                     !form.watch("targetDate") && "text-muted-foreground"
+      |                                                      ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  271 |                                                 )}
+  272 |                                             >
+  273 |                                                 {form.watch("targetDate") ? (  react-hooks/incompatible-library
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-order\page.tsx
+  269:50  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+C:\Users\Dell\OneDrive\Desktop\Sales Inquirys\sales-app\src\app\sales-order\page.tsx:269:50
+  267 |                                             className={cn(
+  268 |                                                 "w-full text-left font-normal",
+> 269 |                                                 !form.watch("poDate") && "text-muted-foreground"
+      |                                                  ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  270 |                                             )}
+  271 |                                         >
+  272 |                                             <CalendarIcon className="mr-2 h-4 w-4" />  react-hooks/incompatible-library
+
+Γ£û 4 problems (0 errors, 4 warnings)
+
