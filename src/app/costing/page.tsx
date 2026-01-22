@@ -211,7 +211,7 @@ export default function CostingPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full max-w-full overflow-x-hidden">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Costing & Quotation</h1>
@@ -223,32 +223,32 @@ export default function CostingPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Inquiry List */}
-                <Card>
+                <Card className="min-w-0">
                     <CardHeader>
                         <CardTitle>FeasibleInquiries</CardTitle>
                         <CardDescription>Ready for costing</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-auto">
+                        <div className="overflow-x-auto w-full max-w-[85vw] sm:max-w-full">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>ID</TableHead>
-                                        <TableHead>Customer</TableHead>
-                                        <TableHead>Action</TableHead>
+                                        <TableHead className="whitespace-nowrap">ID</TableHead>
+                                        <TableHead className="whitespace-nowrap">Customer</TableHead>
+                                        <TableHead className="whitespace-nowrap">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {inquiries.map((inq: FeasibleInquiry) => (
                                         <TableRow key={inq.id}>
-                                            <TableCell className="font-medium">{inq.id}</TableCell>
-                                            <TableCell>
+                                            <TableCell className="font-medium whitespace-nowrap">{inq.id}</TableCell>
+                                            <TableCell className="whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <span>{inq.customer}</span>
                                                     <span className="text-xs text-muted-foreground">{inq.product} ({inq.quantity})</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="whitespace-nowrap">
                                                 <Button
                                                     size="sm"
                                                     onClick={() => {
@@ -269,7 +269,7 @@ export default function CostingPage() {
                 </Card>
 
                 {/* Recent Quotations / Active Quote View */}
-                <Card>
+                <Card className="min-w-0">
                     <CardHeader>
                         <CardTitle>Generated Quotation</CardTitle>
                         <CardDescription>Latest approved estimation</CardDescription>

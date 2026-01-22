@@ -148,7 +148,7 @@ export default function SalesOrderPage() {
     // ... (rest of the component)
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full max-w-full overflow-x-hidden">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Sales Order Processing</h1>
@@ -160,7 +160,7 @@ export default function SalesOrderPage() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {/* Pending Quotes List */}
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 min-w-0">
                     <CardHeader>
                         <CardTitle>Pending Confirmations</CardTitle>
                         <CardDescription>Quotations awaiting Purchase Order (PO)</CardDescription>
@@ -172,27 +172,27 @@ export default function SalesOrderPage() {
                                 No pending quotes to process.
                             </div>
                         ) : (
-                            <div className="overflow-auto">
+                            <div className="overflow-x-auto w-full max-w-[85vw] sm:max-w-full">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Quote #</TableHead>
-                                            <TableHead>Customer</TableHead>
-                                            <TableHead>Value</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Action</TableHead>
+                                            <TableHead className="whitespace-nowrap">Quote #</TableHead>
+                                            <TableHead className="whitespace-nowrap">Customer</TableHead>
+                                            <TableHead className="whitespace-nowrap">Value</TableHead>
+                                            <TableHead className="whitespace-nowrap">Status</TableHead>
+                                            <TableHead className="whitespace-nowrap">Action</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {orders.map((order) => (
                                             <TableRow key={order.quoteId}>
-                                                <TableCell className="font-medium">{order.quoteId}</TableCell>
-                                                <TableCell>
+                                                <TableCell className="font-medium whitespace-nowrap">{order.quoteId}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
                                                     <div>{order.customer}</div>
                                                     <div className="text-xs text-muted-foreground">{order.product}</div>
                                                 </TableCell>
-                                                <TableCell>${order.totalValue.toLocaleString()}</TableCell>
-                                                <TableCell>
+                                                <TableCell className="whitespace-nowrap">${order.totalValue.toLocaleString()}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
                                                     <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                                                         {order.status}
                                                     </Badge>
@@ -219,7 +219,7 @@ export default function SalesOrderPage() {
                 </Card>
 
                 {/* Recent SOs */}
-                <Card className="h-full">
+                <Card className="h-full min-w-0">
                     <CardHeader>
                         <CardTitle>Recent Sales Orders</CardTitle>
                     </CardHeader>

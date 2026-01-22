@@ -114,7 +114,7 @@ export default function FinalQCPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full max-w-full overflow-x-hidden">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Final Quality Inspection</h1>
@@ -125,31 +125,31 @@ export default function FinalQCPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 min-w-0">
                     <CardHeader>
                         <CardTitle>Batches Awaiting Release</CardTitle>
                         <CardDescription>Select a batch to perform final inspection.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-auto">
+                        <div className="overflow-x-auto w-full max-w-[85vw] sm:max-w-full">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Batch ID</TableHead>
-                                        <TableHead>Product</TableHead>
-                                        <TableHead>Qty</TableHead>
-                                        <TableHead>MFG Date</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Action</TableHead>
+                                        <TableHead className="whitespace-nowrap">Batch ID</TableHead>
+                                        <TableHead className="whitespace-nowrap">Product</TableHead>
+                                        <TableHead className="whitespace-nowrap">Qty</TableHead>
+                                        <TableHead className="whitespace-nowrap">MFG Date</TableHead>
+                                        <TableHead className="whitespace-nowrap">Status</TableHead>
+                                        <TableHead className="whitespace-nowrap">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {batches.map(batch => (
                                         <TableRow key={batch.batchId}>
-                                            <TableCell className="font-medium">{batch.batchId}</TableCell>
-                                            <TableCell>{batch.product}</TableCell>
-                                            <TableCell>{batch.qty.toLocaleString()}</TableCell>
-                                            <TableCell>{batch.prodDate}</TableCell>
+                                            <TableCell className="font-medium whitespace-nowrap">{batch.batchId}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{batch.product}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{batch.qty.toLocaleString()}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{batch.prodDate}</TableCell>
                                             <TableCell>
                                                 <Badge variant={batch.status === 'Approved' ? 'default' : batch.status === 'Rejected' ? 'destructive' : 'secondary'}
                                                     className={batch.status === 'Hold' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : ''}
@@ -170,7 +170,7 @@ export default function FinalQCPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="min-w-0">
                     <CardHeader>
                         <CardTitle>QC Performance</CardTitle>
                     </CardHeader>

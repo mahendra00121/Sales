@@ -130,7 +130,7 @@ export default function ProcurementPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full max-w-full overflow-x-hidden">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Procurement & QC (RM)</h1>
@@ -149,36 +149,36 @@ export default function ProcurementPage() {
                 {/* Procurement Tab */}
                 <TabsContent value="procurement">
                     <div className="grid gap-6 md:grid-cols-3">
-                        <Card className="md:col-span-2">
+                        <Card className="md:col-span-2 min-w-0">
                             <CardHeader>
                                 <CardTitle>Open Requisitions</CardTitle>
                                 <CardDescription>Generated from production plans</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="overflow-auto">
+                                <div className="overflow-x-auto w-full max-w-[85vw] sm:max-w-full">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Req ID</TableHead>
-                                                <TableHead>Material</TableHead>
-                                                <TableHead>Qty</TableHead>
-                                                <TableHead>Required By</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead>Action</TableHead>
+                                                <TableHead className="whitespace-nowrap">Req ID</TableHead>
+                                                <TableHead className="whitespace-nowrap">Material</TableHead>
+                                                <TableHead className="whitespace-nowrap">Qty</TableHead>
+                                                <TableHead className="whitespace-nowrap">Required By</TableHead>
+                                                <TableHead className="whitespace-nowrap">Status</TableHead>
+                                                <TableHead className="whitespace-nowrap">Action</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {reqs.map(req => (
                                                 <TableRow key={req.reqId}>
-                                                    <TableCell className="font-medium">{req.reqId}</TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="font-medium whitespace-nowrap">{req.reqId}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">
                                                         <div className="flex flex-col">
                                                             <span>{req.material}</span>
                                                             <span className="text-xs text-muted-foreground">{req.grade}</span>
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell>{req.quantity}</TableCell>
-                                                    <TableCell>{req.requiredBy}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{req.quantity}</TableCell>
+                                                    <TableCell className="whitespace-nowrap">{req.requiredBy}</TableCell>
                                                     <TableCell>
                                                         <Badge variant={req.status === 'Pending PO' ? 'secondary' : 'outline'}>
                                                             {req.status}
@@ -197,7 +197,7 @@ export default function ProcurementPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="min-w-0">
                             <CardHeader>
                                 <CardTitle>Quick Actions</CardTitle>
                             </CardHeader>
@@ -218,34 +218,34 @@ export default function ProcurementPage() {
 
                 {/* Inward QC Tab */}
                 <TabsContent value="qc">
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle>Inward Quality Inspection Queue</CardTitle>
                             <CardDescription>Validate received raw materials before stock entry.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="overflow-auto">
+                            <div className="overflow-x-auto w-full max-w-[85vw] sm:max-w-full">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Batch ID</TableHead>
-                                            <TableHead>Item Details</TableHead>
-                                            <TableHead>Supplier</TableHead>
-                                            <TableHead>Received</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Action</TableHead>
+                                            <TableHead className="whitespace-nowrap">Batch ID</TableHead>
+                                            <TableHead className="whitespace-nowrap">Item Details</TableHead>
+                                            <TableHead className="whitespace-nowrap">Supplier</TableHead>
+                                            <TableHead className="whitespace-nowrap">Received</TableHead>
+                                            <TableHead className="whitespace-nowrap">Status</TableHead>
+                                            <TableHead className="whitespace-nowrap">Action</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {batches.map(batch => (
                                             <TableRow key={batch.batchId}>
-                                                <TableCell className="font-medium">{batch.batchId}</TableCell>
-                                                <TableCell>
+                                                <TableCell className="font-medium whitespace-nowrap">{batch.batchId}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
                                                     <div className="font-medium">{batch.item}</div>
                                                     <div className="text-xs text-muted-foreground">{batch.qty}</div>
                                                 </TableCell>
-                                                <TableCell>{batch.supplier}</TableCell>
-                                                <TableCell>{batch.recvDate}</TableCell>
+                                                <TableCell className="whitespace-nowrap">{batch.supplier}</TableCell>
+                                                <TableCell className="whitespace-nowrap">{batch.recvDate}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={batch.status === 'Approved' ? 'default' : batch.status === 'Rejected' ? 'destructive' : 'secondary'} className={batch.status === 'Approved' ? 'bg-green-600' : ''}>
                                                         {batch.status}

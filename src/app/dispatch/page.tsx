@@ -86,7 +86,7 @@ export default function DispatchPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full max-w-full overflow-x-hidden">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Dispatch & Logistics</h1>
@@ -98,36 +98,36 @@ export default function DispatchPage() {
 
             <div className="grid gap-6 md:grid-cols-3">
                 {/* Dispatch Schedule List */}
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 min-w-0">
                     <CardHeader>
                         <CardTitle>Dispatch Schedule</CardTitle>
                         <CardDescription>Orders ready for loading</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-auto">
+                        <div className="overflow-x-auto w-full max-w-[85vw] sm:max-w-full">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>SO Number</TableHead>
-                                        <TableHead>Customer</TableHead>
-                                        <TableHead>Items</TableHead>
-                                        <TableHead>Destination</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Action</TableHead>
+                                        <TableHead className="whitespace-nowrap">SO Number</TableHead>
+                                        <TableHead className="whitespace-nowrap">Customer</TableHead>
+                                        <TableHead className="whitespace-nowrap">Items</TableHead>
+                                        <TableHead className="whitespace-nowrap">Destination</TableHead>
+                                        <TableHead className="whitespace-nowrap">Status</TableHead>
+                                        <TableHead className="whitespace-nowrap">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {queue.map(order => (
                                         <TableRow key={order.soNumber}>
-                                            <TableCell className="font-medium">{order.soNumber}</TableCell>
-                                            <TableCell>{order.customer}</TableCell>
-                                            <TableCell>
+                                            <TableCell className="font-medium whitespace-nowrap">{order.soNumber}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{order.customer}</TableCell>
+                                            <TableCell className="whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <span>{order.items}</span>
                                                     <span className="text-xs text-muted-foreground">{order.qty.toLocaleString()} units</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-xs">{order.destination}</TableCell>
+                                            <TableCell className="text-xs whitespace-nowrap">{order.destination}</TableCell>
                                             <TableCell>
                                                 <Badge variant={order.status === 'Shipped' ? 'default' : 'secondary'}>
                                                     {order.status}
@@ -155,7 +155,7 @@ export default function DispatchPage() {
 
                 {/* Quick Stats */}
                 <div className="space-y-6">
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle>Logistics Overview</CardTitle>
                         </CardHeader>
