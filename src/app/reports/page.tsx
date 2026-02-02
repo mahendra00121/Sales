@@ -3,6 +3,7 @@
 import {
     BarChart,
     Bar,
+    ComposedChart,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -132,15 +133,15 @@ export default function ReportsPage() {
                         <CardContent className="pl-2">
                             <div className="h-[350px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={efficiencyData}>
+                                    <ComposedChart data={efficiencyData}>
                                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                                         <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                                         <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value: number) => `${value}`} />
-                                        <Tooltip cursor={{ fill: 'transparent' }} />
+                                        <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
                                         <Legend />
-                                        <Bar dataKey="actual" fill="#2563eb" radius={[4, 4, 0, 0]} name="Actual Output" />
-                                        <Bar dataKey="target" fill="#e2e8f0" radius={[4, 4, 0, 0]} name="Target" />
-                                    </BarChart>
+                                        <Bar dataKey="actual" fill="#2563eb" radius={[4, 4, 0, 0]} name="Actual Output" barSize={40} />
+                                        <Line type="monotone" dataKey="target" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} name="Target" strokeDasharray="5 5" />
+                                    </ComposedChart>
                                 </ResponsiveContainer>
                             </div>
                         </CardContent>
