@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
     BarChart,
     Bar,
@@ -21,8 +23,20 @@ import {
     AlertOctagon,
     Clock,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
+    MoreHorizontal,
+    BarChart3,
+    LineChart as LineChartIcon,
+    PieChart as PieChartIcon
 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import {
     Card,
@@ -66,6 +80,9 @@ const deliveryData = [
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function ReportsPage() {
+    const [deliveryChartType, setDeliveryChartType] = useState<"line" | "bar" | "pie">("line");
+    const [defectChartType, setDefectChartType] = useState<"pie" | "bar" | "line">("pie");
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -151,30 +168,72 @@ export default function ReportsPage() {
                 <TabsContent value="quality" className="space-y-4">
                     <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Defect Distribution</CardTitle>
-                                <CardDescription>Breakdown of rejection causes</CardDescription>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <div className="space-y-1">
+                                    <CardTitle>Defect Distribution</CardTitle>
+                                    <CardDescription>Breakdown of rejection causes</CardDescription>
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => setDefectChartType("pie")}>
+                                            <PieChartIcon className="mr-2 h-4 w-4" /> Pie Chart
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setDefectChartType("bar")}>
+                                            <BarChart3 className="mr-2 h-4 w-4" /> Bar Chart
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setDefectChartType("line")}>
+                                            <LineChartIcon className="mr-2 h-4 w-4" /> Line Chart
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </CardHeader>
                             <CardContent>
                                 <div className="h-[300px]">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={rejectionData}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                outerRadius={100}
-                                                fill="#8884d8"
-                                                dataKey="value"
-                                                label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                            >
-                                                {rejectionData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
+                                        {defectChartType === "pie" ? (
+                                            <PieChart>
+                                                <Pie
+                                                    data={rejectionData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    outerRadius={100}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                >
+                                                    {rejectionData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                            </PieChart>
+                                        ) : defectChartType === "bar" ? (
+                                            <BarChart data={rejectionData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                                <CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} />
+                                                <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} />
+                                                <YAxis dataKey="name" type="category" fontSize={10} tickLine={false} axisLine={false} width={100} />
+                                                <Tooltip cursor={{ fill: 'transparent' }} />
+                                                <Bar dataKey="value" name="Defects Count" radius={[0, 4, 4, 0]}>
+                                                    {rejectionData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        ) : (
+                                            <LineChart data={rejectionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                                                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
+                                                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                                <Tooltip />
+                                                <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
+                                            </LineChart>
+                                        )}
                                     </ResponsiveContainer>
                                 </div>
                             </CardContent>
@@ -213,20 +272,69 @@ export default function ReportsPage() {
 
                 <TabsContent value="delivery" className="space-y-4">
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle>On-Time Delivery Trend (Yearly)</CardTitle>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setDeliveryChartType("line")}>
+                                        <LineChartIcon className="mr-2 h-4 w-4" /> Line Chart
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setDeliveryChartType("bar")}>
+                                        <BarChart3 className="mr-2 h-4 w-4" /> Bar Chart
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setDeliveryChartType("pie")}>
+                                        <PieChartIcon className="mr-2 h-4 w-4" /> Pie Chart
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </CardHeader>
                         <CardContent className="pl-2">
                             <div className="h-[350px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={deliveryData}>
-                                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                                        <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis domain={[80, 100]} fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="onTime" stroke="#16a34a" strokeWidth={2} name="On-Time %" />
-                                    </LineChart>
+                                    {deliveryChartType === "line" ? (
+                                        <LineChart data={deliveryData}>
+                                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                                            <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+                                            <YAxis domain={[80, 100]} fontSize={12} tickLine={false} axisLine={false} />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Line type="monotone" dataKey="onTime" stroke="#16a34a" strokeWidth={2} name="On-Time %" />
+                                        </LineChart>
+                                    ) : deliveryChartType === "bar" ? (
+                                        <BarChart data={deliveryData}>
+                                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                                            <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+                                            <YAxis domain={[0, 100]} fontSize={12} tickLine={false} axisLine={false} />
+                                            <Tooltip />
+                                            <Legend />
+                                            <Bar dataKey="onTime" fill="#16a34a" radius={[4, 4, 0, 0]} name="On-Time %" />
+                                        </BarChart>
+                                    ) : (
+                                        <PieChart>
+                                            <Pie
+                                                data={deliveryData}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                outerRadius={100}
+                                                fill="#8884d8"
+                                                dataKey="onTime"
+                                                nameKey="month"
+                                                label={({ month, percent }: any) => `${month} ${(percent * 100).toFixed(0)}%`}
+                                            >
+                                                {deliveryData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend />
+                                        </PieChart>
+                                    )}
                                 </ResponsiveContainer>
                             </div>
                         </CardContent>
