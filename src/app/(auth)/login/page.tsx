@@ -75,8 +75,8 @@ export default function LoginPage() {
       <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
         
         {/* Left Side: Logo & Text */}
-        <div className="flex flex-col items-center md:items-start space-y-1 animate-in fade-in slide-in-from-left-4 duration-700">
-           <div className="flex items-center gap-3 mb-2">
+        <div className="flex flex-col items-center md:items-start space-y-1 fade-in">
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-teal-600/10 text-teal-600">
                <Boxes className="w-8 h-8" />
             </div>
@@ -91,7 +91,7 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side: Login Card */}
-        <div className="flex justify-center md:justify-end animate-in fade-in slide-in-from-right-4 duration-700">
+        <div className="flex justify-center md:justify-end">
           <Card className="w-full max-w-[420px] border-none shadow-[0_20px_50px_rgba(38,152,150,0.12)] rounded-[32px] bg-white p-6 md:p-8">
             <CardHeader className="space-y-2 pb-8 pt-4">
               <div className="flex flex-col items-center space-y-2">

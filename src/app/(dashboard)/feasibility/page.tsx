@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,7 +9,8 @@ import {
     ArrowRight,
     FileCheck,
     Cog,
-    HardHat
+    HardHat,
+    Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,39 +36,29 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
-
-// Mock Data
+// --- Types ---
 interface Inquiry {
-    id: string;
-    customer: string;
-    product: string;
-    material: string;
-    quantity: number;
-    date: string;
-    status: "Pending" | "Feasible" | "Not Feasible";
+    id: number;
+    customerName: string;
+    description: string;
+    status: string;
+    inquiryDate: string;
 }
 
-const initialInquiries: Inquiry[] = [
-    {
-        id: "INQ-2024-001",
-        customer: "Acme Corp",
-        product: "Food Tray 500ml",
-        material: "PET",
-        quantity: 50000,
-        date: "2024-01-15",
-        status: "Pending",
-    },
-    {
-        id: "INQ-2024-004",
-        customer: "Global Pharma",
-        product: "Vial Blister",
-        material: "PVC",
-        quantity: 120000,
-        date: "2024-01-20",
-        status: "Pending",
-    },
-];
+interface ReviewData {
+    id: number;
+    inquiryId: number;
+    isFeasible: boolean;
+    technicalNotes: string;
+    estimatedProcessDays: number;
+    reviewedBy: string;
+    reviewDate: string;
+    status: string;
+    inquiry?: Inquiry;
+}
 
 // --- Form Schema ---
 const reviewSchema = z.object({
@@ -88,17 +79,12 @@ const reviewSchema = z.object({
 type ReviewFormValues = z.infer<typeof reviewSchema>;
 
 export default function FeasibilityPage() {
-    const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
+    const [pendingInquiries, setPendingInquiries] = useState<Inquiry[]>([]);
+    const [completedReviews, setCompletedReviews] = useState<ReviewData[]>([]);
     const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
     const [open, setOpen] = useState(false);
-
-    // State for storing completed reviews (mock database)
-    interface ReviewData extends ReviewFormValues {
-        inquiryId: string;
-        reviewDate: Date;
-        status: "Feasible" | "Not Feasible";
-    }
-    const [completedReviews, setCompletedReviews] = useState<ReviewData[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
 
     const form = useForm<ReviewFormValues>({
         resolver: zodResolver(reviewSchema),
@@ -114,48 +100,71 @@ export default function FeasibilityPage() {
         },
     });
 
+    // 1. Fetch Data from Backend
+    const fetchData = async () => {
+        try {
+            // Fetch All Inquiries
+            const inqRes = await fetch("http://localhost:5278/api/SalesInquiry");
+            const allInq: Inquiry[] = await inqRes.json();
+            // Filter only "New" status for pending
+            setPendingInquiries(allInq.filter(i => i.status === "New"));
+
+            // Fetch Recent Reviews
+            const reviewRes = await fetch("http://localhost:5278/api/FeasibilityReview");
+            const reviews: ReviewData[] = await reviewRes.json();
+            setCompletedReviews(reviews.sort((a, b) => b.id - a.id));
+        } catch (error) {
+            console.error("Fetch Error:", error);
+        } finally {
+            setIsFetching(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
     const handleStartReview = (inquiry: Inquiry) => {
         setSelectedInquiry(inquiry);
-        // Reset form for new review, potentially pre-filling if we had draft data
-        form.reset({
-            moldStatus: "existing",
-            materialAvailable: false,
-            machineAvailable: false,
-            drawingsReviewed: false,
-            cycleTime: "",
-            yieldEstimate: "",
-            remarks: "",
-            moldDetails: "",
-        });
+        form.reset();
         setOpen(true);
     };
 
-    const onSubmit = (data: ReviewFormValues) => {
+    const onSubmit = async (data: ReviewFormValues) => {
         if (!selectedInquiry) return;
+        setIsLoading(true);
 
-        // Determine Feasibility Logic
         const isFeasible = data.materialAvailable && data.machineAvailable && data.drawingsReviewed;
 
-        // Cast to literal type to satisfy TypeScript
-        const newStatus: "Feasible" | "Not Feasible" = isFeasible ? "Feasible" : "Not Feasible";
-
-        const updatedInquiries = inquiries.map((favorites) =>
-            favorites.id === selectedInquiry.id ? { ...favorites, status: newStatus } : favorites
-        );
-
-        setInquiries(updatedInquiries);
-        setCompletedReviews([
-            ...completedReviews,
-            {
-                ...data,
+        try {
+            const payload = {
                 inquiryId: selectedInquiry.id,
-                reviewDate: new Date(),
-                status: newStatus,
-            },
-        ]);
+                isFeasible: isFeasible,
+                technicalNotes: `${data.remarks || ""}. Mold: ${data.moldStatus} (${data.moldDetails || "N/A"}). CycleTime: ${data.cycleTime}s, Yield: ${data.yieldEstimate}%`,
+                estimatedProcessDays: 7, // Default estimation
+                reviewedBy: "Admin Engineer",
+                status: isFeasible ? "Approved" : "Rejected"
+            };
 
-        setOpen(false);
-        setSelectedInquiry(null);
+            const response = await fetch("http://localhost:5278/api/FeasibilityReview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                await fetchData(); // Refresh both lists
+                setOpen(false);
+                setSelectedInquiry(null);
+            } else {
+                alert("Failed to submit review");
+            }
+        } catch (error) {
+            console.error("Submission Error:", error);
+            alert("Error connecting to server");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -171,81 +180,78 @@ export default function FeasibilityPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Pending Inquiries List */}
-                <Card className="col-span-1 border-l-4 border-l-yellow-500">
+                <Card className="col-span-1 border-l-4 border-l-yellow-500 shadow-sm">
                     <CardHeader>
                         <CardTitle>Pending Reviews</CardTitle>
                         <CardDescription>Inquiries awaiting technical check</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {inquiries.filter(inq => inq.status === 'Pending').length === 0 ? (
-                            <p className="text-sm text-muted-foreground italic">No pending inquiries.</p>
+                        {isFetching ? (
+                            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-teal-600" /></div>
+                        ) : pendingInquiries.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic text-center py-10">No new inquiries.</p>
                         ) : (
-                            inquiries
-                                .filter((inq) => inq.status === "Pending")
-                                .map((inq) => (
-                                    <div
-                                        key={inq.id}
-                                        className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow cursor-pointer"
-                                        onClick={() => handleStartReview(inq)}
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <Badge variant="outline">{inq.id}</Badge>
-                                            <span className="text-xs text-muted-foreground">{inq.date}</span>
-                                        </div>
-                                        <h4 className="font-semibold">{inq.customer}</h4>
-                                        <p className="text-sm text-muted-foreground">{inq.product}</p>
-                                        <div className="mt-3 flex items-center justify-between text-xs">
-                                            <span className="bg-muted px-2 py-1 rounded">{inq.material}</span>
-                                            <span className="font-medium text-primary flex items-center gap-1">
-                                                Review <ArrowRight className="h-3 w-3" />
-                                            </span>
-                                        </div>
+                            pendingInquiries.map((inq) => (
+                                <div
+                                    key={inq.id}
+                                    className="p-4 rounded-lg border bg-card hover:bg-teal-50 transition-colors cursor-pointer group"
+                                    onClick={() => handleStartReview(inq)}
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge variant="outline" className="bg-white">INQ-{inq.id.toString().padStart(4, '0')}</Badge>
+                                        <span className="text-xs text-muted-foreground">{format(new Date(inq.inquiryDate), "dd MMM")}</span>
                                     </div>
-                                ))
+                                    <h4 className="font-semibold text-teal-900">{inq.customerName}</h4>
+                                    <p className="text-sm text-muted-foreground truncate">{inq.description}</p>
+                                    <div className="mt-3 flex items-center justify-between text-xs">
+                                        <span className="bg-white border px-2 py-1 rounded text-teal-700">Detailed Review Req.</span>
+                                        <span className="font-medium text-teal-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                            Assess <ArrowRight className="h-3 w-3" />
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
                         )}
-
                     </CardContent>
                 </Card>
 
                 {/* Completed Reviews Log */}
-                <Card className="col-span-1 md:col-span-2">
+                <Card className="col-span-1 md:col-span-2 shadow-sm border-t-4 border-t-teal-600">
                     <CardHeader>
-                        <CardTitle>Review Log (Session)</CardTitle>
-                        <CardDescription>Recently processed feasibilities</CardDescription>
+                        <CardTitle>Feasibility Logs</CardTitle>
+                        <CardDescription>Database records of recently processed feasibilities</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ScrollArea className="h-[400px]">
-                            {completedReviews.length === 0 ? (
+                        <ScrollArea className="h-[500px] pr-4">
+                            {isFetching ? (
+                                <div className="flex justify-center p-10"><Loader2 className="animate-spin text-teal-600" /></div>
+                            ) : completedReviews.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-muted-foreground opacity-50 border-2 border-dashed rounded-lg">
                                     <FileCheck className="h-10 w-10 mb-2" />
-                                    <p>No reviews completed yet.</p>
+                                    <p>No reviews found in database.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {completedReviews.map((review, idx) => {
-                                        const originalInq = initialInquiries.find(i => i.id === review.inquiryId) || inquiries.find(i => i.id === review.inquiryId);
-                                        return (
-                                            <div key={idx} className="flex items-center justify-between p-4 border rounded-lg">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold">{review.inquiryId}</span>
-                                                        <Badge variant={review.status === "Feasible" ? "default" : "destructive"}>
-                                                            {review.status}
-                                                        </Badge>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground mt-1">
-                                                        {originalInq?.customer} - {originalInq?.product}
-                                                    </p>
+                                    {completedReviews.map((review) => (
+                                        <div key={review.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-teal-800">INQ-{review.inquiryId.toString().padStart(4, '0')}</span>
+                                                    <Badge className={cn(
+                                                        review.isFeasible ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-red-100 text-red-700 hover:bg-red-100"
+                                                    )}>
+                                                        {review.isFeasible ? "Feasible" : "Not Feasible"}
+                                                    </Badge>
                                                 </div>
-                                                <div className="text-right text-sm">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="text-xs text-muted-foreground">Cycle Time: {review.cycleTime}s</span>
-                                                        <span className="text-xs text-muted-foreground">Yield: {review.yieldEstimate}%</span>
-                                                    </div>
-                                                </div>
+                                                <p className="text-sm font-medium mt-1">{review.inquiry?.customerName || "Customer"}</p>
+                                                <p className="text-xs text-muted-foreground italic mt-1 max-w-[400px] truncate">{review.technicalNotes}</p>
                                             </div>
-                                        )
-                                    })}
+                                            <div className="text-right">
+                                                <p className="text-xs font-semibold text-teal-600">{review.reviewedBy}</p>
+                                                <p className="text-[10px] text-muted-foreground">{format(new Date(review.reviewDate), "dd MMM yyyy HH:mm")}</p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </ScrollArea>
@@ -259,22 +265,21 @@ export default function FeasibilityPage() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <HardHat className="h-5 w-5 text-orange-600" />
-                            Technical Review: {selectedInquiry?.id}
+                            Technical Review: INQ-{selectedInquiry?.id.toString().padStart(4, '0')}
                         </DialogTitle>
                         <DialogDescription>
-                            Assess production capability for {selectedInquiry?.product} ({selectedInquiry?.material}).
+                            Assess production capability for {selectedInquiry?.customerName}.
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Engineering & Production</Badge>
-                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Quality</Badge>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Sales</Badge>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Engineering</Badge>
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Production</Badge>
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">QC</Badge>
                         </div>
 
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                            {/* Section 1: Mold Assessment (Engineering) */}
                             <div className="space-y-3 border p-4 rounded-lg bg-muted/20">
                                 <h3 className="font-semibold text-sm flex items-center gap-2">
                                     <Cog className="h-4 w-4" /> 1. Mold Assessment (Engineering)
@@ -306,7 +311,6 @@ export default function FeasibilityPage() {
                                 </div>
                             </div>
 
-                            {/* Section 2: Resource Checks (Production & Sales) */}
                             <div className="space-y-3">
                                 <h3 className="font-semibold text-sm flex items-center gap-2">
                                     <Check className="h-4 w-4" /> 2. Resource Availability Checks
@@ -334,27 +338,19 @@ export default function FeasibilityPage() {
                                             checked={form.watch("drawingsReviewed")}
                                             onCheckedChange={(checked) => form.setValue("drawingsReviewed", checked === true)}
                                         />
-                                        <Label htmlFor="dwg-review" className="cursor-pointer">Drawings / Samples Reviewed & Validated (QC/Eng)</Label>
+                                        <Label htmlFor="dwg-review" className="cursor-pointer">Drawings / Samples Reviewed & Validated</Label>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Section 3: Costing Inputs (Output) */}
-                            <div className="space-y-3">
-                                <h3 className="font-semibold text-sm flex items-center gap-2 text-green-700">
-                                    <FileCheck className="h-4 w-4" /> 3. Costing Inputs (Output)
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Est. Cycle Time (sec)</Label>
-                                        <Input type="number" step="0.1" {...form.register("cycleTime")} placeholder="e.g. 15.5" />
-                                        {form.formState.errors.cycleTime && <span className="text-xs text-red-500">{form.formState.errors.cycleTime.message}</span>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Est. Production Yield (%)</Label>
-                                        <Input type="number" step="1" {...form.register("yieldEstimate")} placeholder="e.g. 95" />
-                                        {form.formState.errors.yieldEstimate && <span className="text-xs text-red-500">{form.formState.errors.yieldEstimate.message}</span>}
-                                    </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Est. Cycle Time (sec)</Label>
+                                    <Input type="number" step="0.1" {...form.register("cycleTime")} placeholder="e.g. 15.5" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Est. Production Yield (%)</Label>
+                                    <Input type="number" step="1" {...form.register("yieldEstimate")} placeholder="e.g. 95" />
                                 </div>
                             </div>
 
@@ -363,22 +359,21 @@ export default function FeasibilityPage() {
                                 <Textarea {...form.register("remarks")} placeholder="Any concerns or special instructions..." />
                             </div>
 
-                            <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
-                                <div className="mr-auto flex items-center gap-2 text-sm text-muted-foreground italic">
-                                    * Approval requires all checks passed
-                                </div>
+                            <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                                 <Button
                                     type="submit"
+                                    disabled={isLoading}
                                     className={`${form.watch("materialAvailable") && form.watch("machineAvailable") && form.watch("drawingsReviewed")
                                         ? "bg-green-600 hover:bg-green-700"
                                         : "bg-red-600 hover:bg-red-700"
                                         }`}
                                 >
-                                    {form.watch("materialAvailable") && form.watch("machineAvailable") && form.watch("drawingsReviewed")
-                                        ? <><Check className="mr-2 h-4 w-4" /> Approve Feasibility</>
-                                        : <><ArrowRight className="mr-2 h-4 w-4" /> Submit as Not Feasible</>
-                                    }
+                                    {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : (
+                                        form.watch("materialAvailable") && form.watch("machineAvailable") && form.watch("drawingsReviewed")
+                                            ? <><Check className="mr-2 h-4 w-4" /> Approve Feasibility</>
+                                            : <><ArrowRight className="mr-2 h-4 w-4" /> Submit as Not Feasible</>
+                                    )}
                                 </Button>
                             </DialogFooter>
                         </form>

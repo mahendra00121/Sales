@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
@@ -21,6 +21,7 @@ import {
     Menu,
     ChevronLeft,
     ChevronRight,
+    LogOut,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ const menuGroups = [
     {
         group: "Overview",
         items: [
-            { label: "Dashboard", href: "/", icon: LayoutDashboard },
+            { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
             { label: "Analytics & Reports", href: "/reports", icon: BarChart3 },
         ]
     },
@@ -81,6 +82,8 @@ export function Sidebar() {
     const [open, setOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
     const pathname = usePathname();
+    const router = useRouter();
+
 
     const NavContent = ({ className, collapsed = false }: NavContentProps) => (
         <div className={cn("flex flex-col h-full py-4", className)}>
@@ -139,7 +142,9 @@ export function Sidebar() {
                             </div>
                         </div>
                     )}
-                    <ModeToggle />
+                    <div className="flex items-center gap-2">
+                        <ModeToggle />
+                    </div>
                 </div>
             </div>
         </div>
@@ -191,7 +196,7 @@ export function Sidebar() {
                     </span>
                 </div>
 
-                <div className="ml-auto">
+                <div className="ml-auto flex items-center gap-2">
                     <ModeToggle />
                 </div>
             </div>
