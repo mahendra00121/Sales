@@ -405,8 +405,8 @@ function MasterDataTable({
                                                 <Button variant="ghost" size="icon" onClick={() => onEdit(item)}>
                                                     <Pencil className="h-4 w-4 text-blue-600" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}>
-                                                    <Trash2 className="h-4 w-4 text-blue-600" />
+                                                <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)} className="hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                                                    <Trash2 className="h-4 w-4 text-rose-600" />
                                                 </Button>
                                             </div>
                                         </TableCell>

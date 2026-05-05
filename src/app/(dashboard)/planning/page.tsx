@@ -266,7 +266,7 @@ export default function PlanningPage() {
                                     </div>
                                 </div>
                                 <div className="pt-4 flex justify-end gap-3 border-t">
-                                    <Button variant="ghost" className="text-blue-600" onClick={() => setSelectedOrder(null)}>Discard</Button>
+                                    <Button variant="ghost" className="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 font-bold" onClick={() => setSelectedOrder(null)}>Discard</Button>
                                     <Button onClick={handleAddToSchedule} disabled={isLoading || !machine || !startDate} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
                                         {isLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <><CalendarDays className="mr-2 h-4 w-4" /> Issue Job Card</>}
                                     </Button>

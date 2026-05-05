@@ -281,7 +281,7 @@ export default function WastePage() {
                                                         <Button size="sm" variant="outline" className="h-8 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold" onClick={() => handleUpdateStatus(log.id, "Recycled")}>
                                                             <RefreshCcw className="mr-1 h-3 w-3" /> Grind
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" className="h-8 text-blue-600 font-bold" onClick={() => handleUpdateStatus(log.id, "Disposed")}>
+                                                        <Button size="sm" variant="ghost" className="h-8 text-rose-600 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20" onClick={() => handleUpdateStatus(log.id, "Disposed")}>
                                                             Dispose
                                                         </Button>
                                                     </div>
