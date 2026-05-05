@@ -36,6 +36,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { fetchWithAuth } from "@/lib/api";
 import {
     Tabs,
     TabsContent,
@@ -58,7 +59,7 @@ export default function ReportsPage() {
     const fetchData = async () => {
         try {
             // 1. Fetch Production Logs for Efficiency & Rejection
-            const floorRes = await fetch("http://localhost:5278/api/ShopFloor");
+            const floorRes = await fetchWithAuth("/ShopFloor");
             const logs = await floorRes.json();
             
             // Calculate Efficiency (Simplified: Actual vs Average)
@@ -111,82 +112,148 @@ export default function ReportsPage() {
         <div className="space-y-6 p-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                    <h1 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-3">
                          Analytics Control <LayoutDashboard className="h-8 w-8 text-blue-600" />
                     </h1>
                     <p className="text-muted-foreground font-medium">Deep-dive into operational performance and quality audits.</p>
                 </div>
-                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
-                     <span className="px-3 py-2 text-xs font-bold bg-white rounded-lg shadow-sm">Real-time Data Active</span>
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                     <span className="px-3 py-2 text-xs font-bold bg-background dark:bg-slate-900 rounded-lg shadow-sm">Real-time Data Active</span>
                 </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-                <Card className="bg-white border-none shadow-lg rounded-3xl overflow-hidden group hover:scale-[1.02] transition-all">
+                <Card className="bg-background border-none shadow-lg rounded-3xl overflow-hidden group hover:scale-[1.02] transition-all">
                     <div className="h-2 bg-blue-600" />
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-black text-slate-400 uppercase">Efficiency Index</CardTitle>
                         <TrendingUp className="h-5 w-5 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-900">{kpis.efficiency}%</div>
-                        <p className="text-[10px] font-bold text-green-600 flex items-center mt-2 bg-green-50 w-fit px-2 py-0.5 rounded-full">
+                        <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{kpis.efficiency}%</div>
+                        <p className="text-[10px] font-bold text-blue-600 flex items-center mt-2 bg-blue-50 dark:bg-blue-900/30 w-fit px-2 py-0.5 rounded-full">
                             <ArrowUpRight className="h-3 w-3 mr-1" /> +2.4% vs Baseline
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-white border-none shadow-lg rounded-3xl overflow-hidden group hover:scale-[1.02] transition-all">
-                    <div className="h-2 bg-rose-600" />
+                <Card className="bg-background border-none shadow-lg rounded-3xl overflow-hidden group hover:scale-[1.02] transition-all">
+                    <div className="h-2 bg-blue-600" />
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-black text-slate-400 uppercase">Rejection Rate</CardTitle>
-                        <AlertOctagon className="h-5 w-5 text-rose-600" />
+                        <AlertOctagon className="h-5 w-5 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-900">{kpis.rejectionRate}%</div>
-                        <p className="text-[10px] font-bold text-red-600 flex items-center mt-2 bg-red-50 w-fit px-2 py-0.5 rounded-full">
+                        <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{kpis.rejectionRate}%</div>
+                        <p className="text-[10px] font-bold text-blue-600 flex items-center mt-2 bg-blue-50 dark:bg-blue-900/30 w-fit px-2 py-0.5 rounded-full">
                              CRITICAL THRESHOLD: 2.0%
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-white border-none shadow-lg rounded-3xl overflow-hidden group hover:scale-[1.02] transition-all">
-                    <div className="h-2 bg-indigo-600" />
+                <Card className="bg-background border-none shadow-lg rounded-3xl overflow-hidden group hover:scale-[1.02] transition-all">
+                    <div className="h-2 bg-blue-600" />
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-black text-slate-400 uppercase">Supply Chain Health</CardTitle>
-                        <Clock className="h-5 w-5 text-indigo-600" />
+                        <Clock className="h-5 w-5 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-900">{kpis.onTimeDelivery}%</div>
-                        <p className="text-[10px] font-bold text-indigo-600 mt-2">OTIF (On Time In Full) Compliance</p>
+                        <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{kpis.onTimeDelivery}%</div>
+                        <p className="text-[10px] font-bold text-blue-600 mt-2">OTIF (On Time In Full) Compliance</p>
                     </CardContent>
                 </Card>
             </div>
 
             <Tabs defaultValue="production" className="space-y-4">
-                <TabsList className="bg-slate-100 rounded-2xl p-1 gap-2">
-                    <TabsTrigger value="production" className="rounded-xl font-bold px-6">Production Output</TabsTrigger>
-                    <TabsTrigger value="quality" className="rounded-xl font-bold px-6">Quality & Rejection</TabsTrigger>
+                <TabsList className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-1 gap-2">
+                    <TabsTrigger value="production" className="rounded-xl font-bold px-6 dark:data-[state=active]:bg-slate-900">Production Output</TabsTrigger>
+                    <TabsTrigger value="quality" className="rounded-xl font-bold px-6 dark:data-[state=active]:bg-slate-900">Quality & Rejection</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="production" className="space-y-4">
                     <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-                        <CardHeader className="bg-slate-50 border-b">
-                            <CardTitle className="text-lg flex items-center gap-2 text-slate-800"><CalendarDays className="h-5 w-5 text-blue-600" /> Daily Output Trends</CardTitle>
+                        <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b">
+                            <CardTitle className="text-lg flex items-center gap-2 text-slate-800 dark:text-slate-200"><CalendarDays className="h-5 w-5 text-blue-600" /> Daily Output Trends</CardTitle>
                             <CardDescription>Target vs Actual Produced Quantity (Last 7 Logs)</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-8">
-                            <div className="h-[400px]">
+                            <div className="h-[400px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <ComposedChart data={efficiencyData}>
-                                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-                                        <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
-                                        <YAxis fontSize={11} tickLine={false} axisLine={false} />
-                                        <Tooltip 
-                                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                            cursor={{ fill: '#f1f5f9' }}
+                                    <ComposedChart data={efficiencyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                        <defs>
+                                            <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
+                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                                            </linearGradient>
+                                            <linearGradient id="colorTarget" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4}/>
+                                                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                                        <XAxis 
+                                            dataKey="name" 
+                                            fontSize={12} 
+                                            fontWeight={600}
+                                            tickLine={false} 
+                                            axisLine={false} 
+                                            tick={{ fill: '#64748b' }}
+                                            dy={10}
                                         />
-                                        <Legend iconType="circle" />
-                                        <Bar dataKey="actual" fill="#2563eb" radius={[6, 6, 0, 0]} name="Actual Qty" barSize={35} />
-                                        <Line type="monotone" dataKey="target" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} name="Daily Target" />
+                                        <YAxis 
+                                            fontSize={12} 
+                                            fontWeight={600}
+                                            tickLine={false} 
+                                            axisLine={false} 
+                                            tick={{ fill: '#64748b' }}
+                                            dx={-10}
+                                        />
+                                        <Tooltip 
+                                            content={({ active, payload, label }) => {
+                                                if (active && payload && payload.length) {
+                                                    return (
+                                                        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-2xl backdrop-blur-md bg-opacity-90">
+                                                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">{label}</p>
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-2 w-2 rounded-full bg-blue-600" />
+                                                                    <p className="text-white text-sm font-bold">Actual: <span className="text-blue-400">{payload[0].value?.toLocaleString()}</span></p>
+                                                                </div>
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-2 w-2 rounded-full bg-sky-400" />
+                                                                    <p className="text-white text-sm font-bold">Target: <span className="text-sky-300">{payload[1].value?.toLocaleString()}</span></p>
+                                                                </div>
+                                                                <div className="mt-2 pt-2 border-t border-slate-800">
+                                                                    <p className="text-xs font-bold text-blue-400">
+                                                                        Efficiency: {((Number(payload[0].value) / Number(payload[1].value)) * 100).toFixed(1)}%
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                            cursor={{ fill: 'rgba(99, 102, 241, 0.05)', radius: 10 }}
+                                        />
+                                        <Legend 
+                                            verticalAlign="top" 
+                                            align="right" 
+                                            iconType="circle"
+                                            wrapperStyle={{ paddingBottom: '20px', fontSize: '12px', fontWeight: 'bold' }}
+                                        />
+                                        <Bar 
+                                            dataKey="actual" 
+                                            fill="url(#colorActual)" 
+                                            radius={[6, 6, 0, 0]} 
+                                            name="Actual Output" 
+                                            barSize={30}
+                                        />
+                                        <Bar 
+                                            dataKey="target" 
+                                            fill="url(#colorTarget)" 
+                                            radius={[6, 6, 0, 0]} 
+                                            name="Target Output" 
+                                            barSize={30}
+                                        />
                                     </ComposedChart>
                                 </ResponsiveContainer>
                             </div>
@@ -197,8 +264,8 @@ export default function ReportsPage() {
                 <TabsContent value="quality" className="space-y-4">
                     <div className="grid gap-6 md:grid-cols-2">
                         <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-                            <CardHeader className="bg-slate-50 border-b">
-                                <CardTitle className="text-lg flex items-center gap-2"><FilePieChart className="h-5 w-5 text-rose-600" /> Waste Composition</CardTitle>
+                            <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b">
+                                <CardTitle className="text-lg flex items-center gap-2"><FilePieChart className="h-5 w-5 text-blue-600" /> Waste Composition</CardTitle>
                             </CardHeader>
                             <CardContent className="pt-8">
                                 <div className="h-[350px]">
@@ -225,20 +292,20 @@ export default function ReportsPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-xl rounded-3xl bg-slate-900 text-white p-6">
-                             <h3 className="text-2xl font-black mb-6 flex items-center gap-2">Operational Insights <ArrowUpRight className="h-6 w-6 text-blue-400" /></h3>
+                        <Card className="border border-slate-200 dark:border-none shadow-xl rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6">
+                             <h3 className="text-2xl font-black mb-6 flex items-center gap-2">Operational Insights <ArrowUpRight className="h-6 w-6 text-blue-600 dark:text-blue-400" /></h3>
                              <div className="space-y-6">
                                 <div className="space-y-2">
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Quality Trend</p>
-                                    <p className="text-sm font-medium text-slate-300">Total Waste recorded across all lines is <span className="text-rose-400 font-bold">{kpis.rejectionRate}%</span>. Optimization of Thermoforming temperature in Floor log is recommended.</p>
+                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Total Waste recorded across all lines is <span className="text-blue-600 dark:text-blue-400 font-bold">{kpis.rejectionRate}%</span>. Optimization of Thermoforming temperature in Floor log is recommended.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Efficiency Alert</p>
-                                    <p className="text-sm font-medium text-slate-300">Production is running at <span className="text-green-400 font-bold">{kpis.efficiency}%</span> capacity. Current throughput meets the monthly target projected by Sales Orders.</p>
+                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Production is running at <span className="text-blue-600 dark:text-blue-400 font-bold">{kpis.efficiency}%</span> capacity. Current throughput meets the monthly target projected by Sales Orders.</p>
                                 </div>
-                                <div className="p-4 bg-white/5 rounded-3xl border border-white/10 mt-8">
-                                    <p className="text-xs font-bold text-blue-400 mb-1">SYSTEM MESSAGE</p>
-                                    <p className="text-[10px] text-slate-400">All data is aggregated from 10 modules including Production, QC and Dispatch logs. Updated every 5 seconds.</p>
+                                <div className="p-4 bg-slate-50 dark:bg-background/5 rounded-3xl border border-slate-200 dark:border-white/10 mt-8">
+                                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1">SYSTEM MESSAGE</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">All data is aggregated from 10 modules including Production, QC and Dispatch logs. Updated every 5 seconds.</p>
                                 </div>
                              </div>
                         </Card>

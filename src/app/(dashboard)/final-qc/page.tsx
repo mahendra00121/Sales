@@ -38,6 +38,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { fetchWithAuth } from "@/lib/api";
 
 // --- Updated Types to match Backend ---
 interface ProductionBatch {
@@ -82,11 +83,11 @@ export default function FinalQCPage() {
     const fetchData = async () => {
         try {
             // Fetch from ShopFloor (Actual production logs)
-            const floorRes = await fetch("http://localhost:5278/api/ShopFloor");
+            const floorRes = await fetchWithAuth("/ShopFloor");
             const allBatches: ProductionBatch[] = await floorRes.json();
             setBatches(allBatches);
 
-            const qcRes = await fetch("http://localhost:5278/api/FinalQC");
+            const qcRes = await fetchWithAuth("/FinalQC");
             const allQC: QCReport[] = await qcRes.json();
             setReports(allQC.sort((a,b) => b.id - a.id));
         } catch (error) {
@@ -125,7 +126,7 @@ export default function FinalQCPage() {
                 qcNotes: remarks
             };
 
-            const response = await fetch("http://localhost:5278/api/FinalQC", {
+            const response = await fetchWithAuth("/FinalQC", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -148,15 +149,15 @@ export default function FinalQCPage() {
         <div className="space-y-6 p-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-rose-900 border-l-4 border-l-rose-500 pl-4">Final Technical Inspection</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-blue-900 border-l-4 border-l-rose-500 pl-4">Final Technical Inspection</h1>
                     <p className="text-muted-foreground ml-4">Analyze shop floor batches and certify quality compliance.</p>
                 </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-12">
                 <Card className="md:col-span-8 shadow-lg">
-                    <CardHeader className="bg-rose-50/50 border-b">
-                        <CardTitle className="text-rose-900 flex items-center gap-2"><ClipboardList className="h-5 w-5" /> Production Batches</CardTitle>
+                    <CardHeader className="bg-blue-50/50 border-b">
+                        <CardTitle className="text-blue-900 flex items-center gap-2"><ClipboardList className="h-5 w-5" /> Production Batches</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                         <Table>
@@ -174,11 +175,11 @@ export default function FinalQCPage() {
                                 ) : (
                                     batches.map(batch => (
                                         <TableRow key={batch.id}>
-                                            <TableCell className="font-bold text-rose-700">{batch.batchNumber}</TableCell>
+                                            <TableCell className="font-bold text-blue-700">{batch.batchNumber}</TableCell>
                                             <TableCell>{batch.productionPlan?.order?.inquiry?.customerName || "Stock Item"}</TableCell>
-                                            <TableCell className="font-medium">{batch.actualQuantityProduced.toLocaleString()} Pcs</TableCell>
+                                            <TableCell className="font-medium">{batch.actualQuantityProduced?.toLocaleString() ?? "0"} Pcs</TableCell>
                                             <TableCell>
-                                                <Button size="sm" className="bg-rose-600 hover:bg-rose-700" onClick={() => handleInspect(batch)}>
+                                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleInspect(batch)}>
                                                     Inspect
                                                 </Button>
                                             </TableCell>
@@ -193,13 +194,13 @@ export default function FinalQCPage() {
                 <Card className="md:col-span-4 h-fit shadow-md border-t-4 border-t-rose-600">
                     <CardHeader><CardTitle className="text-lg">QC Performance</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="p-4 bg-green-50 rounded-2xl border border-green-100 flex justify-between items-center">
-                            <div><p className="text-xs font-bold text-green-600">PASSED</p><p className="text-3xl font-black">{reports.filter(r => r.outcome === 'Pass').length}</p></div>
-                            <CheckCircle className="h-10 w-10 text-green-400 opacity-50" />
+                        <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex justify-between items-center">
+                            <div><p className="text-xs font-bold text-blue-600">PASSED</p><p className="text-3xl font-black">{reports.filter(r => r.outcome === 'Pass').length}</p></div>
+                            <CheckCircle className="h-10 w-10 text-blue-400 opacity-50" />
                         </div>
-                        <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex justify-between items-center">
-                            <div><p className="text-xs font-bold text-rose-600">FAILED/REWORK</p><p className="text-3xl font-black">{reports.filter(r => r.outcome !== 'Pass').length}</p></div>
-                            <XCircle className="h-10 w-10 text-rose-400 opacity-50" />
+                        <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex justify-between items-center">
+                            <div><p className="text-xs font-bold text-blue-600">FAILED/REWORK</p><p className="text-3xl font-black">{reports.filter(r => r.outcome !== 'Pass').length}</p></div>
+                            <XCircle className="h-10 w-10 text-blue-400 opacity-50" />
                         </div>
                     </CardContent>
                 </Card>
@@ -209,11 +210,11 @@ export default function FinalQCPage() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>QC Analysis: {selectedBatch?.batchNumber}</DialogTitle>
-                        <DialogDescription>Produced Quantity: {selectedBatch?.actualQuantityProduced.toLocaleString()} Pcs</DialogDescription>
+                        <DialogDescription>Produced Quantity: {selectedBatch?.actualQuantityProduced?.toLocaleString() ?? "0"} Pcs</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-6 py-4">
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 border rounded-2xl">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 border rounded-2xl">
                              <div className="flex items-center space-x-2">
                                 <Checkbox id="c1" checked={checks.dimensions} onCheckedChange={(c) => setChecks({ ...checks, dimensions: !!c })} />
                                 <Label htmlFor="c1" className="text-sm font-semibold">Dimensions</Label>
@@ -235,9 +236,9 @@ export default function FinalQCPage() {
                         <div className="space-y-3">
                             <Label className="font-bold">Decision Outcome</Label>
                             <div className="grid grid-cols-3 gap-3">
-                                <Button variant={status === 'Pass' ? 'default' : 'outline'} className={status === 'Pass' ? "bg-green-600" : ""} onClick={() => setStatus('Pass')}>PASS</Button>
-                                <Button variant={status === 'Rework' ? 'default' : 'outline'} className={status === 'Rework' ? "bg-orange-500" : ""} onClick={() => setStatus('Rework')}>REWORK</Button>
-                                <Button variant={status === 'Fail' ? 'default' : 'outline'} className={status === 'Fail' ? "bg-rose-600" : ""} onClick={() => setStatus('Fail')}>FAIL</Button>
+                                <Button variant={status === 'Pass' ? 'default' : 'outline'} className={status === 'Pass' ? "bg-blue-600" : ""} onClick={() => setStatus('Pass')}>PASS</Button>
+                                <Button variant={status === 'Rework' ? 'default' : 'outline'} className={status === 'Rework' ? "bg-blue-500" : ""} onClick={() => setStatus('Rework')}>REWORK</Button>
+                                <Button variant={status === 'Fail' ? 'default' : 'outline'} className={status === 'Fail' ? "bg-blue-600" : ""} onClick={() => setStatus('Fail')}>FAIL</Button>
                             </div>
                         </div>
 
@@ -248,7 +249,7 @@ export default function FinalQCPage() {
                     </div>
 
                     <DialogFooter>
-                        <Button className="w-full bg-rose-800 hover:bg-rose-900 py-6 text-lg font-bold" onClick={handleSubmit} disabled={isLoading}>
+                        <Button className="w-full bg-blue-800 hover:bg-blue-900 py-6 text-lg font-bold" onClick={handleSubmit} disabled={isLoading}>
                             {isLoading ? <Loader2 className="animate-spin" /> : "Save Report & Certify Batch"}
                         </Button>
                     </DialogFooter>

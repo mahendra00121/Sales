@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { fetchWithAuth } from "@/lib/api";
 
 // --- Types ---
 interface PendingQuote {
@@ -111,11 +112,11 @@ export default function SalesOrderPage() {
     // 1. Fetch Data
     const fetchData = async () => {
         try {
-            const inqRes = await fetch("http://localhost:5278/api/SalesInquiry");
+            const inqRes = await fetchWithAuth("/SalesInquiry");
             const allInq: PendingQuote[] = await inqRes.json();
             setPendingQuotes(allInq.filter(i => i.status === "QuoteSent"));
 
-            const orderRes = await fetch("http://localhost:5278/api/SalesOrder");
+            const orderRes = await fetchWithAuth("/SalesOrder");
             const allOrders: SalesOrder[] = await orderRes.json();
             setActiveOrders(allOrders.sort((a,b) => b.id - a.id));
         } catch (error) {
@@ -150,7 +151,7 @@ export default function SalesOrderPage() {
                 status: "Confirmed"
             };
 
-            const response = await fetch("http://localhost:5278/api/SalesOrder", {
+            const response = await fetchWithAuth("/SalesOrder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -175,7 +176,7 @@ export default function SalesOrderPage() {
         <div className="space-y-6 w-full max-w-full overflow-x-hidden p-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-blue-900">Sales Order Processing</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-blue-900 dark:text-blue-100">Sales Order Processing</h1>
                     <p className="text-muted-foreground">
                         Convert approved quotations into official Sales Orders.
                     </p>
@@ -184,7 +185,7 @@ export default function SalesOrderPage() {
 
             <div className="grid gap-6 md:grid-cols-12">
                 {/* Pending Table */}
-                <Card className="md:col-span-8 shadow-md border-t-4 border-t-blue-600">
+                <Card className="md:col-span-8 shadow-md border-t-4 border-t-blue-600 w-full overflow-hidden">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>Quotes Awaiting PO</CardTitle>
@@ -194,7 +195,7 @@ export default function SalesOrderPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
-                            <Table>
+                            <Table className="whitespace-nowrap">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Quote Ref</TableHead>
@@ -211,12 +212,12 @@ export default function SalesOrderPage() {
                                     ) : (
                                         pendingQuotes.map((q) => (
                                             <TableRow key={q.id}>
-                                                <TableCell className="font-medium text-blue-700">QTN-{q.id.toString().padStart(4, '0')}</TableCell>
+                                                <TableCell className="font-medium text-blue-700 dark:text-blue-300">QTN-{q.id.toString().padStart(4, '0')}</TableCell>
                                                 <TableCell>
                                                     <div className="font-bold">{q.customerName}</div>
                                                     <div className="text-xs text-muted-foreground truncate max-w-[200px]">{q.description}</div>
                                                 </TableCell>
-                                                <TableCell>{q.quantityRequested.toLocaleString()}</TableCell>
+                                                <TableCell>{q.quantityRequested?.toLocaleString() ?? "0"}</TableCell>
                                                 <TableCell>
                                                     <Button size="sm" className="bg-blue-600 hover:bg-blue-700 font-semibold" onClick={() => { setSelectedQuote(q); setOpen(true); }}>
                                                         Convert to SO
@@ -243,10 +244,10 @@ export default function SalesOrderPage() {
                             <p className="text-sm text-center text-muted-foreground opacity-50 py-10">No orders active.</p>
                         ) : (
                             activeOrders.map(so => (
-                                <div key={so.id} className="border-l-4 border-l-green-500 rounded-lg p-4 bg-muted/20 space-y-2 hover:bg-muted/40 transition-colors">
+                                <div key={so.id} className="border-l-4 border-l-green-500 rounded-lg p-4 bg-muted/20 dark:bg-muted/10 space-y-2 hover:bg-muted/40 transition-colors">
                                     <div className="flex justify-between items-center">
-                                        <span className="font-bold text-blue-800">{so.orderNumber}</span>
-                                        <Badge className="bg-green-100 text-green-700 border-green-200">Processing</Badge>
+                                        <span className="font-bold text-blue-800 dark:text-blue-200">{so.orderNumber}</span>
+                                        <Badge className="bg-blue-100 text-blue-700 border-blue-200">Processing</Badge>
                                     </div>
                                     <div className="text-sm">
                                         <p className="font-semibold">{so.inquiry?.customerName}</p>
@@ -272,8 +273,8 @@ export default function SalesOrderPage() {
                     </DialogHeader>
 
                     <form onSubmit={form.handleSubmit(onConfirmOrder)} className="space-y-6">
-                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-3">
-                            <h4 className="font-bold text-blue-800 text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4" /> Compliance Check</h4>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 space-y-3">
+                            <h4 className="font-bold text-blue-800 dark:text-blue-200 text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4" /> Compliance Check</h4>
                             <div className="flex flex-col gap-3">
                                 <div className="flex items-center space-x-2">
                                     <input type="checkbox" id="priceMatch" className="h-4 w-4 accent-blue-600" {...form.register("priceMatch")} />

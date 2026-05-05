@@ -54,7 +54,10 @@ export default function LoginPage() {
       if (response.ok) {
         const result = await response.json();
         localStorage.setItem("user", JSON.stringify(result)); // Store user info
-        router.push("/dashboard");
+        if (result.token) {
+            document.cookie = `token=${result.token}; path=/; max-age=86400`; // Store token in cookie for middleware (1 day expiry)
+        }
+        router.push("/master-data"); // Redirect to master-data or dashboard
       } else {
         const errorData = await response.json();
         alert(errorData.message || "Invalid login credentials");

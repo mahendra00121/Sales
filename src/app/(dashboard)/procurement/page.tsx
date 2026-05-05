@@ -51,6 +51,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchWithAuth } from "@/lib/api";
 
 // --- Updated Types to match Backend ---
 interface ProcurementRecord {
@@ -79,7 +80,7 @@ export default function ProcurementPage() {
 
     const fetchData = async () => {
         try {
-            const res = await fetch("http://localhost:5278/api/Procurement");
+            const res = await fetchWithAuth("/Procurement");
             const data: ProcurementRecord[] = await res.json();
             setProcurements(data.sort((a,b) => b.id - a.id));
         } catch (error) {
@@ -108,7 +109,7 @@ export default function ProcurementPage() {
                 purchaseOrderNumber: `PO-${Date.now().toString().slice(-6)}`
             };
 
-            const response = await fetch("http://localhost:5278/api/Procurement", {
+            const response = await fetchWithAuth("/Procurement", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -157,7 +158,7 @@ export default function ProcurementPage() {
         <div className="space-y-6 p-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-emerald-900">Procurement & QC</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-blue-900 dark:text-blue-100">Procurement & QC</h1>
                     <p className="text-muted-foreground">
                         Manage supply chain for PET, PVC, HIPS and technical quality inspections.
                     </p>
@@ -165,16 +166,16 @@ export default function ProcurementPage() {
             </div>
 
             <Tabs defaultValue="procurement" className="space-y-4">
-                <TabsList className="bg-emerald-50 border-emerald-100">
-                    <TabsTrigger value="procurement" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Material Procurement</TabsTrigger>
-                    <TabsTrigger value="qc" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Inward QC Logs</TabsTrigger>
+                <TabsList className="bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 flex-wrap h-auto w-full justify-start">
+                    <TabsTrigger value="procurement" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Material Procurement</TabsTrigger>
+                    <TabsTrigger value="qc" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Inward QC Logs</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="procurement" className="space-y-6">
                     <div className="grid gap-6 md:grid-cols-12">
-                        <Card className="md:col-span-4 shadow-md border-t-4 border-t-emerald-600">
+                        <Card className="md:col-span-4 shadow-md border-t-4 border-t-indigo-600">
                             <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-emerald-600" /> Raise Purchase Order</CardTitle>
+                                <CardTitle className="text-lg flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-blue-600" /> Raise Purchase Order</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
@@ -196,20 +197,20 @@ export default function ProcurementPage() {
                                     <Label>Quantity (kg)</Label>
                                     <Input type="number" placeholder="0.00" value={newQty} onChange={(e) => setNewQty(Number(e.target.value))} />
                                 </div>
-                                <Button className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={handleRaisePO} disabled={isLoading}>
+                                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handleRaisePO} disabled={isLoading}>
                                     {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "Confirm PO & Notify Supplier"}
                                 </Button>
                             </CardContent>
                         </Card>
 
-                        <Card className="md:col-span-8 shadow-md">
+                        <Card className="md:col-span-8 shadow-md w-full overflow-hidden">
                             <CardHeader>
                                 <CardTitle className="text-lg">Open Purchase Orders</CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader className="bg-emerald-50">
+                                    <Table className="whitespace-nowrap">
+                                        <TableHeader className="bg-blue-50 dark:bg-blue-900/20">
                                             <TableRow>
                                                 <TableHead>PO ID</TableHead>
                                                 <TableHead>Material</TableHead>
@@ -224,7 +225,7 @@ export default function ProcurementPage() {
                                             ) : (
                                                 procurements.map(p => (
                                                     <TableRow key={p.id}>
-                                                        <TableCell className="font-bold text-emerald-700">{p.purchaseOrderNumber || `PO-${p.id}`}</TableCell>
+                                                        <TableCell className="font-bold text-blue-700 dark:text-blue-300">{p.purchaseOrderNumber || `PO-${p.id}`}</TableCell>
                                                         <TableCell className="font-medium">{p.itemName}</TableCell>
                                                         <TableCell className="text-sm">{p.vendorName}</TableCell>
                                                         <TableCell className="font-bold">{p.quantity} {p.unit}</TableCell>
@@ -241,14 +242,14 @@ export default function ProcurementPage() {
                 </TabsContent>
 
                 <TabsContent value="qc">
-                    <Card className="shadow-lg border-emerald-100">
-                        <CardHeader className="bg-emerald-900 text-white rounded-t-lg">
+                    <Card className="shadow-lg border-blue-100 dark:border-blue-800">
+                        <CardHeader className="bg-blue-900 text-white rounded-t-lg">
                             <CardTitle className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5" /> Quality Inspection Queue (Incoming)</CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader className="bg-emerald-50">
+                                <Table className="whitespace-nowrap">
+                                    <TableHeader className="bg-blue-50 dark:bg-blue-900/20">
                                         <TableRow>
                                             <TableHead>Batch ID</TableHead>
                                             <TableHead>Item Details</TableHead>
@@ -268,7 +269,7 @@ export default function ProcurementPage() {
                                                 <TableCell>{p.vendorName}</TableCell>
                                                 <TableCell><Badge variant="secondary">{p.qcStatus}</Badge></TableCell>
                                                 <TableCell>
-                                                    <Button size="sm" className="bg-emerald-800" onClick={() => { setSelectedBatch(p); setQcOpen(true); }}>
+                                                    <Button size="sm" className="bg-blue-800" onClick={() => { setSelectedBatch(p); setQcOpen(true); }}>
                                                         <ClipboardCheck className="mr-2 h-4 w-4" /> Inspect
                                                     </Button>
                                                 </TableCell>
@@ -289,7 +290,7 @@ export default function ProcurementPage() {
                         <DialogDescription>{selectedBatch?.itemName} from {selectedBatch?.vendorName}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2"><Label>Thickness (Measured)</Label><Input placeholder="0.52mm" /></div>
                             <div className="space-y-2"><Label>Moisture Content %</Label><Input placeholder="0.05%" /></div>
                         </div>
@@ -297,7 +298,7 @@ export default function ProcurementPage() {
                     </div>
                     <DialogFooter className="gap-2">
                         <Button variant="destructive" onClick={() => handleQCSubmit('Rejected')}>Reject Batch</Button>
-                        <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleQCSubmit('Approved')}>Approve & Store</Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => handleQCSubmit('Approved')}>Approve & Store</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -35,6 +35,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { fetchWithAuth } from "@/lib/api";
 
 // --- Types ---
 interface FeasibleInquiry {
@@ -98,11 +99,11 @@ export default function CostingPage() {
     // 1. Fetch Data
     const fetchData = async () => {
         try {
-            const inqRes = await fetch("http://localhost:5278/api/SalesInquiry");
+            const inqRes = await fetchWithAuth("/SalesInquiry");
             const allInq: FeasibleInquiry[] = await inqRes.json();
             setInquiries(allInq.filter(i => i.status === "FeasibilityApproved"));
 
-            const quoteRes = await fetch("http://localhost:5278/api/CostingQuote");
+            const quoteRes = await fetchWithAuth("/CostingQuote");
             const allQuotes: Quotation[] = await quoteRes.json();
             setQuotations(allQuotes.sort((a,b) => b.id - a.id));
         } catch (error) {
@@ -160,7 +161,7 @@ export default function CostingPage() {
                 createdBy: "Admin Sales"
             };
 
-            const response = await fetch("http://localhost:5278/api/CostingQuote", {
+            const response = await fetchWithAuth("/CostingQuote", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -184,7 +185,7 @@ export default function CostingPage() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-teal-900 font-outfit">Costing & Quotation</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-blue-900 dark:text-blue-100 font-outfit">Costing & Quotation</h1>
                     <p className="text-muted-foreground">
                         Real-time financial estimation linked to feasibility data.
                     </p>
@@ -210,7 +211,7 @@ export default function CostingPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {isFetching ? (
-                                        <TableRow><TableCell colSpan={3} className="text-center py-4"><Loader2 className="animate-spin inline mr-2 text-teal-600" /> Loading...</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={3} className="text-center py-4"><Loader2 className="animate-spin inline mr-2 text-blue-600" /> Loading...</TableCell></TableRow>
                                     ) : inquiries.length === 0 ? (
                                         <TableRow><TableCell colSpan={3} className="text-center py-4 text-muted-foreground">No approved inquiries found.</TableCell></TableRow>
                                     ) : (
@@ -218,11 +219,11 @@ export default function CostingPage() {
                                             <TableRow key={inq.id}>
                                                 <TableCell className="font-bold">INQ-{inq.id.toString().padStart(4, '0')}</TableCell>
                                                 <TableCell>
-                                                    <div className="font-medium text-teal-800">{inq.customerName}</div>
+                                                    <div className="font-medium text-blue-800 dark:text-blue-200">{inq.customerName}</div>
                                                     <div className="text-xs text-muted-foreground truncate max-w-[150px]">{inq.description}</div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => { setSelectedInquiry(inq); setOpen(true); }}>
+                                                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => { setSelectedInquiry(inq); setOpen(true); }}>
                                                         <Calculator className="h-3 w-3 mr-1" /> Costing
                                                     </Button>
                                                 </TableCell>
@@ -243,22 +244,22 @@ export default function CostingPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {isFetching ? (
-                            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-teal-600" /></div>
+                            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-blue-600" /></div>
                         ) : quotations.length === 0 ? (
-                            <div className="text-center py-10 opacity-30 text-teal-900"><FileText className="h-10 w-10 mx-auto" /><p>No quotes yet</p></div>
+                            <div className="text-center py-10 opacity-30 text-blue-900 dark:text-blue-100"><FileText className="h-10 w-10 mx-auto" /><p>No quotes yet</p></div>
                         ) : (
                             quotations.map((q) => (
-                                <div key={q.id} className="p-4 border rounded-lg hover:bg-teal-50/50 transition-colors">
+                                <div key={q.id} className="p-4 border rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/50 transition-colors">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <span className="text-xs font-bold text-teal-600">QTN-{(q.id + 1000).toString()}</span>
-                                            <h4 className="font-bold text-teal-900">{q.inquiry?.customerName}</h4>
+                                            <span className="text-xs font-bold text-blue-600">QTN-{(q.id + 1000).toString()}</span>
+                                            <h4 className="font-bold text-blue-900 dark:text-blue-100">{q.inquiry?.customerName}</h4>
                                         </div>
-                                        <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-100 border-teal-200">Price Sent</Badge>
+                                        <Badge className="bg-blue-100 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border-blue-200">Price Sent</Badge>
                                     </div>
                                     <div className="mt-2 text-sm flex gap-4">
-                                        <div><span className="text-muted-foreground block text-xs">Unit Price</span> <span className="font-bold text-teal-800">₹{q.finalPrice.toFixed(2)}</span></div>
-                                        <div><span className="text-muted-foreground block text-xs">With Tax (18%)</span> <span className="font-bold text-green-600">₹{q.finalPriceWithTax.toFixed(2)}</span></div>
+                                        <div><span className="text-muted-foreground block text-xs">Unit Price</span> <span className="font-bold text-blue-800 dark:text-blue-200">₹{q.finalPrice.toFixed(2)}</span></div>
+                                        <div><span className="text-muted-foreground block text-xs">With Tax (18%)</span> <span className="font-bold text-blue-600">₹{q.finalPriceWithTax.toFixed(2)}</span></div>
                                     </div>
                                 </div>
                             ))
@@ -304,25 +305,25 @@ export default function CostingPage() {
                             </div>
                         </form>
 
-                        <div className="bg-teal-900 text-white p-6 rounded-2xl shadow-xl space-y-4">
+                        <div className="bg-blue-900 text-white p-6 rounded-2xl shadow-xl space-y-4">
                             <h4 className="font-bold flex items-center gap-2 border-b border-white/20 pb-2"><DollarSign className="h-4 w-4" /> Final Calculation</h4>
                             {calc && (
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-xs opacity-70"><span>Material Cost:</span><span>₹{calc.rmCost.toFixed(3)}</span></div>
                                     <div className="flex justify-between text-xs opacity-70"><span>Processing:</span><span>₹{calc.machineCost.toFixed(3)}</span></div>
                                     <div className="flex justify-between text-xs opacity-70"><span>Overheads:</span><span>₹{calc.overheads.toFixed(3)}</span></div>
-                                    <Separator className="bg-white/20" />
+                                    <Separator className="bg-background/20" />
                                     <div className="flex justify-between items-end">
                                         <div><p className="text-[10px] uppercase tracking-wider opacity-60">Final Unit Price</p> <p className="text-3xl font-bold">₹{calc.finalPrice.toFixed(2)}</p></div>
-                                        <CheckCircle2 className="h-8 w-8 text-teal-400" />
+                                        <CheckCircle2 className="h-8 w-8 text-blue-400" />
                                     </div>
-                                    <p className="text-[10px] text-teal-300 italic">* Plus GST 18.00% extra as applicable</p>
+                                    <p className="text-[10px] text-blue-300 italic">* Plus GST 18.00% extra as applicable</p>
                                 </div>
                             )}
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="submit" form="costing-form" disabled={isLoading} className="bg-teal-700 hover:bg-teal-800 text-white w-full">
+                        <Button type="submit" form="costing-form" disabled={isLoading} className="bg-blue-700 hover:bg-blue-800 text-white w-full">
                             {isLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Save Quote & Notify Sales"}
                         </Button>
                     </DialogFooter>

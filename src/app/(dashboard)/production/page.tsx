@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { fetchWithAuth } from "@/lib/api";
 
 // --- Types ---
 interface ProductionPlan {
@@ -76,7 +77,7 @@ export default function ProductionPage() {
     // 1. Fetch Data
     const fetchData = async () => {
         try {
-            const res = await fetch("http://localhost:5278/api/ProductionPlan");
+            const res = await fetchWithAuth("/ProductionPlan");
             const data: ProductionPlan[] = await res.json();
             setPlans(data.filter(p => p.status !== "Completed"));
             
@@ -116,7 +117,7 @@ export default function ProductionPage() {
                 recordedAt: new Date()
             };
 
-            const response = await fetch("http://localhost:5278/api/ShopFloor", {
+            const response = await fetchWithAuth("/ShopFloor", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -144,7 +145,7 @@ export default function ProductionPage() {
         <div className="space-y-6 p-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 border-l-4 border-l-orange-500 pl-4">Shop Floor Execution</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 border-l-4 border-l-orange-500 pl-4">Shop Floor Execution</h1>
                     <p className="text-muted-foreground ml-4">
                         Real-time machine output monitoring and quality logging.
                     </p>
@@ -156,7 +157,7 @@ export default function ProductionPage() {
 
             <div className="grid gap-6 md:grid-cols-12">
                 {/* Active Jobs List */}
-                <Card className="md:col-span-4 shadow-md bg-slate-50/50">
+                <Card className="md:col-span-4 shadow-md bg-slate-50 dark:bg-slate-900">
                     <CardHeader>
                         <CardTitle className="text-lg">Active Machine Jobs</CardTitle>
                         <CardDescription>Select job to log production</CardDescription>
@@ -171,14 +172,14 @@ export default function ProductionPage() {
                                 plans.map(plan => (
                                     <div 
                                         key={plan.id} 
-                                        className={`p-4 cursor-pointer hover:bg-slate-100 transition-all ${selectedPlan?.id === plan.id ? 'bg-white shadow border-l-4 border-l-blue-600' : ''}`}
+                                        className={`p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all ${selectedPlan?.id === plan.id ? 'bg-background shadow border-l-4 border-l-blue-600' : ''}`}
                                         onClick={() => setSelectedPlan(plan)}
                                     >
                                         <div className="flex justify-between items-center mb-2">
-                                            <Badge className="bg-slate-800">{plan.machineName}</Badge>
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] py-0">{plan.machineName}</Badge>
                                             <Badge variant="outline" className="text-[10px]">{plan.status}</Badge>
                                         </div>
-                                        <div className="font-bold text-slate-800">{plan.order?.inquiry?.customerName}</div>
+                                        <div className="font-bold text-slate-800 dark:text-slate-200">{plan.order?.inquiry?.customerName}</div>
                                         <div className="text-xs text-muted-foreground truncate">{plan.order?.inquiry?.description}</div>
                                         <div className="mt-2 flex justify-between text-[10px] font-bold text-slate-500">
                                             <span>Progress</span>
@@ -197,44 +198,48 @@ export default function ProductionPage() {
                     {selectedPlan ? (
                         <>
                             {/* Live Counter */}
-                            <Card className="bg-slate-900 text-white shadow-2xl overflow-hidden relative border-none">
-                                <div className="absolute top-0 right-0 p-8 opacity-10"><Factory className="h-40 w-40" /></div>
+                            <Card className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl overflow-hidden relative border border-slate-200 dark:border-none">
+                                <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 text-blue-600 dark:text-white"><Factory className="h-40 w-40" /></div>
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-blue-600 rounded-2xl animate-pulse"><Activity className="h-6 w-6" /></div>
+                                        <div className="p-3 bg-blue-100 dark:bg-blue-600 text-blue-600 dark:text-white rounded-2xl animate-pulse"><Activity className="h-6 w-6" /></div>
                                         <div>
-                                            <CardTitle className="text-2xl">{selectedPlan.machineName} - {selectedPlan.order?.inquiry?.customerName}</CardTitle>
-                                            <CardDescription className="text-slate-400">Target: {selectedPlan.targetQuantity.toLocaleString()} Units</CardDescription>
+                                            <CardTitle className="text-lg text-blue-700 dark:text-blue-300">
+                                                {selectedPlan.machineName} <span className="text-slate-400 font-normal px-1">-</span> <span className="text-slate-800 dark:text-white">{selectedPlan.order?.inquiry?.customerName}</span>
+                                            </CardTitle>
+                                            <CardDescription className="text-slate-500 dark:text-slate-400">Target: {selectedPlan.targetQuantity?.toLocaleString() ?? "0"} Units</CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-8">
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-1 md:grid-cols-3 gap-8">
                                         <div className="space-y-1">
-                                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Produced</span>
-                                            <div className="text-5xl font-black text-blue-400">{selectedPlan.completedQuantity.toLocaleString()}</div>
+                                            <span className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">Produced</span>
+                                            <div className="text-5xl font-black text-blue-600 dark:text-blue-400">{selectedPlan.completedQuantity?.toLocaleString() ?? "0"}</div>
                                         </div>
                                         <div className="space-y-1">
-                                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Balance</span>
-                                            <div className="text-5xl font-black text-rose-400">{(selectedPlan.targetQuantity - selectedPlan.completedQuantity).toLocaleString()}</div>
+                                            <span className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">Balance</span>
+                                            <div className="text-5xl font-black text-blue-600 dark:text-blue-400">{((selectedPlan.targetQuantity || 0) - (selectedPlan.completedQuantity || 0)).toLocaleString()}</div>
                                         </div>
                                         <div className="space-y-1 hidden md:block">
-                                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Status</span>
-                                            <div className="text-2xl font-bold flex items-center gap-2 mt-4"><CheckCircle className="h-6 w-6 text-green-500" /> ON-TRACK</div>
+                                            <span className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">Status</span>
+                                            <div className="text-2xl font-bold flex items-center gap-2 mt-4"><CheckCircle className="h-6 w-6 text-blue-500" /> ON-TRACK</div>
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="flex justify-between text-xs font-bold text-slate-300">
+                                        <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
                                             <span>REAL-TIME COMPLETION</span>
                                             <span>{completionPercent.toFixed(1)}%</span>
                                         </div>
-                                        <Progress value={completionPercent} className="h-4 bg-slate-800" />
+                                        <Progress value={completionPercent} className="h-4 bg-slate-200 dark:bg-slate-800" />
                                     </div>
-                                    <div className="flex flex-wrap gap-4 pt-4 border-t border-slate-800">
-                                        <Button className="bg-white text-slate-900 hover:bg-slate-200 font-bold px-8" onClick={() => setLogOpen(true)}>
+                                    <div className="flex flex-wrap gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 relative z-10">
+                                        <Button className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 font-bold px-8 shadow-md" onClick={() => setLogOpen(true)}>
                                             <Activity className="h-4 w-4 mr-2" /> Log Output
                                         </Button>
-                                        <Button variant="outline" className="border-slate-700 hover:bg-slate-800"><AlertTriangle className="h-4 w-4 mr-2" /> Machine Breakdown</Button>
+                                        <Button variant="outline" className="bg-transparent text-slate-600 border-slate-300 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-800 dark:hover:text-white">
+                                            <AlertTriangle className="h-4 w-4 mr-2" /> Machine Breakdown
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -245,11 +250,11 @@ export default function ProductionPage() {
                                     <CardHeader className="py-4">
                                         <CardTitle className="text-sm flex items-center gap-2"><Settings className="h-4 w-4" /> Forming Parameters</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="grid grid-cols-2 gap-3 pb-4">
-                                        <div className="p-3 bg-slate-50 border rounded-xl"><span className="text-[10px] text-slate-500 block">TEMP Z1</span><span className="font-bold">215°C</span></div>
-                                        <div className="p-3 bg-slate-50 border rounded-xl"><span className="text-[10px] text-slate-500 block">CYCLE</span><span className="font-bold">12.5s</span></div>
-                                        <div className="p-3 bg-slate-50 border rounded-xl"><span className="text-[10px] text-slate-500 block">VACUUM</span><span className="font-bold">-0.8bar</span></div>
-                                        <div className="p-3 bg-slate-50 border rounded-xl"><span className="text-[10px] text-slate-500 block">COOLING</span><span className="font-bold">4.2s</span></div>
+                                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-4">
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border rounded-xl"><span className="text-[10px] text-slate-500 block">TEMP Z1</span><span className="font-bold">215°C</span></div>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border rounded-xl"><span className="text-[10px] text-slate-500 block">CYCLE</span><span className="font-bold">12.5s</span></div>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border rounded-xl"><span className="text-[10px] text-slate-500 block">VACUUM</span><span className="font-bold">-0.8bar</span></div>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border rounded-xl"><span className="text-[10px] text-slate-500 block">COOLING</span><span className="font-bold">4.2s</span></div>
                                     </CardContent>
                                 </Card>
                                 <Card className="shadow-sm">
@@ -257,16 +262,16 @@ export default function ProductionPage() {
                                         <CardTitle className="text-sm flex items-center gap-2"><Scale className="h-4 w-4" /> Technical Quality Checks</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        <div className="p-4 border-2 border-dashed rounded-xl bg-orange-50/50 text-center">
-                                            <p className="text-xs text-orange-700 font-bold mb-2">LAST CHECK: 45 MINS AGO</p>
-                                            <Button size="sm" variant="outline" className="border-orange-200">Log Dimensional Check</Button>
+                                        <div className="p-4 border-2 border-dashed rounded-xl bg-blue-50/50 dark:bg-blue-900/50 text-center">
+                                            <p className="text-xs text-blue-700 font-bold mb-2">LAST CHECK: 45 MINS AGO</p>
+                                            <Button size="sm" variant="outline" className="border-blue-200">Log Dimensional Check</Button>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </div>
                         </>
                     ) : (
-                        <div className="h-64 border-4 border-dashed rounded-3xl flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                        <div className="h-64 border-4 border-dashed rounded-3xl flex flex-col items-center justify-center text-slate-400 bg-slate-50 dark:bg-slate-800/50">
                             <PlayCircle className="h-16 w-16 mb-4 opacity-20" />
                             <p className="text-lg font-medium">Select a machine job from the left sidebar to start monitoring.</p>
                         </div>
@@ -286,9 +291,9 @@ export default function ProductionPage() {
                             <Label className="text-blue-600 font-bold">Good Produced (Pcs)</Label>
                             <Input type="number" className="text-2xl font-black h-14" placeholder="0" value={produced} onChange={(e) => setProduced(Number(e.target.value))} />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-rose-600 font-medium">Rejected (Pcs)</Label>
+                                <Label className="text-blue-600 font-medium">Rejected (Pcs)</Label>
                                 <Input type="number" placeholder="0" value={rejected} onChange={(e) => setRejected(Number(e.target.value))} />
                             </div>
                             <div className="space-y-2">

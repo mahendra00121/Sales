@@ -37,6 +37,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { fetchWithAuth } from "@/lib/api";
 import {
     Dialog,
     DialogContent,
@@ -74,7 +75,7 @@ export default function WastePage() {
 
     const fetchData = async () => {
         try {
-            const res = await fetch("http://localhost:5278/api/WasteRecord");
+            const res = await fetchWithAuth("/WasteRecord");
             const data: WasteRecord[] = await res.json();
             setWasteLogs(data);
         } catch (error) {
@@ -103,7 +104,7 @@ export default function WastePage() {
                 remarks: remarks
             };
 
-            const response = await fetch("http://localhost:5278/api/WasteRecord", {
+            const response = await fetchWithAuth("/WasteRecord", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -145,12 +146,12 @@ export default function WastePage() {
         <div className="space-y-6 p-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 border-l-8 border-l-emerald-500 pl-6">Waste & Material Recovery</h1>
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 border-l-8 border-l-emerald-500 pl-6">Waste & Material Recovery</h1>
                     <p className="text-muted-foreground font-medium ml-6">Track production scrap cycles and regrind sustainability.</p>
                 </div>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-emerald-600 hover:bg-emerald-700 font-bold py-6 px-10 rounded-2xl shadow-xl shadow-emerald-100">
+                        <Button className="bg-blue-600 hover:bg-blue-700 font-bold py-6 px-10 rounded-2xl shadow-xl shadow-blue-100">
                             <Recycle className="mr-2 h-5 w-5" /> Log New Scrap
                         </Button>
                     </DialogTrigger>
@@ -163,7 +164,7 @@ export default function WastePage() {
                                 <Label>Weight (kg)</Label>
                                 <Input type="number" className="h-12 font-bold" value={weight} onChange={(e) => setWeight(e.target.value)} />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label>Material</Label>
                                     <Select onValueChange={setMaterial} defaultValue="PET">
@@ -194,7 +195,7 @@ export default function WastePage() {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button className="w-full bg-emerald-700 py-6 font-bold text-lg" onClick={handleAddLog} disabled={isLoading}>
+                            <Button className="w-full bg-blue-700 py-6 font-bold text-lg" onClick={handleAddLog} disabled={isLoading}>
                                  {isLoading ? <Loader2 className="animate-spin" /> : "Save Disposition Entry"}
                             </Button>
                         </DialogFooter>
@@ -203,50 +204,50 @@ export default function WastePage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-                <Card className="border-none shadow-xl rounded-3xl bg-white overflow-hidden">
+                <Card className="border-none shadow-xl rounded-3xl bg-background overflow-hidden">
                     <div className="h-2 bg-slate-400" />
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-xs font-black text-slate-400 uppercase">Total Generated</CardTitle>
                         <Trash2 className="h-5 w-5 text-slate-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-900">{totalWaste.toFixed(2)} <span className="text-sm font-medium text-slate-400">kg</span></div>
+                        <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{totalWaste.toFixed(2)} <span className="text-sm font-medium text-slate-400">kg</span></div>
                         <p className="text-[10px] font-bold text-slate-500 mt-2 flex items-center gap-1"><Activity className="h-3 w-3" /> Cumulative Month-to-Date</p>
                     </CardContent>
                 </Card>
-                <Card className="border-none shadow-xl rounded-3xl bg-emerald-50 overflow-hidden">
-                    <div className="h-2 bg-emerald-600" />
+                <Card className="border-none shadow-xl rounded-3xl bg-blue-50 dark:bg-blue-900/20 overflow-hidden">
+                    <div className="h-2 bg-blue-600" />
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-black text-emerald-600 uppercase">Recycled / Grinded</CardTitle>
-                        <RefreshCcw className="h-5 w-5 text-emerald-600" />
+                        <CardTitle className="text-xs font-black text-blue-600 uppercase">Recycled / Grinded</CardTitle>
+                        <RefreshCcw className="h-5 w-5 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-emerald-900">{recycledWaste.toFixed(2)} <span className="text-sm font-medium text-emerald-400">kg</span></div>
-                        <p className="text-[10px] font-bold text-emerald-600 mt-2">Recovery Rate: {totalWaste > 0 ? ((recycledWaste/totalWaste)*100).toFixed(1) : 0}%</p>
+                        <div className="text-3xl font-black text-blue-900 dark:text-blue-100">{recycledWaste.toFixed(2)} <span className="text-sm font-medium text-blue-400">kg</span></div>
+                        <p className="text-[10px] font-bold text-blue-600 mt-2">Recovery Rate: {totalWaste > 0 ? ((recycledWaste/totalWaste)*100).toFixed(1) : 0}%</p>
                     </CardContent>
                 </Card>
-                <Card className="border-none shadow-xl rounded-3xl bg-rose-50 overflow-hidden">
-                    <div className="h-2 bg-rose-600" />
+                <Card className="border-none shadow-xl rounded-3xl bg-blue-50 dark:bg-blue-900/20 overflow-hidden">
+                    <div className="h-2 bg-blue-600" />
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xs font-black text-rose-600 uppercase">Eco Disposal</CardTitle>
-                        <TrendingDown className="h-5 w-5 text-rose-600" />
+                        <CardTitle className="text-xs font-black text-blue-600 uppercase">Eco Disposal</CardTitle>
+                        <TrendingDown className="h-5 w-5 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-rose-900">{(totalWaste - recycledWaste).toFixed(2)} <span className="text-sm font-medium text-rose-400">kg</span></div>
-                        <p className="text-[10px] font-bold text-rose-600 mt-2">Non-recyclables Sent to Disposal</p>
+                        <div className="text-3xl font-black text-blue-900 dark:text-blue-100">{(totalWaste - recycledWaste).toFixed(2)} <span className="text-sm font-medium text-blue-400">kg</span></div>
+                        <p className="text-[10px] font-bold text-blue-600 mt-2">Non-recyclables Sent to Disposal</p>
                     </CardContent>
                 </Card>
             </div>
 
             <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b">
-                    <CardTitle className="text-lg flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" /> Waste Disposition Log</CardTitle>
+                <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b">
+                    <CardTitle className="text-lg flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-blue-600" /> Waste Disposition Log</CardTitle>
                     <CardDescription>Monitor scrap movement from shop floor to recycling station.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <Table>
-                            <TableHeader className="bg-slate-50">
+                            <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
                                 <TableRow>
                                     <TableHead className="font-bold text-slate-600 uppercase text-[10px]">Date</TableHead>
                                     <TableHead className="font-bold text-slate-600 uppercase text-[10px]">Type / Material</TableHead>
@@ -262,25 +263,25 @@ export default function WastePage() {
                                     <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-400 italic">No scrap records found.</TableCell></TableRow>
                                 ) : (
                                     wasteLogs.map((log) => (
-                                        <TableRow key={log.id} className="hover:bg-slate-50/50">
+                                        <TableRow key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                             <TableCell className="text-xs font-medium">{new Date(log.recordedAt).toLocaleDateString()}</TableCell>
                                             <TableCell>
-                                                <div className="font-black text-slate-800">{log.wasteType}</div>
-                                                <div className="text-[10px] font-bold text-emerald-600">{log.material}</div>
+                                                <div className="font-black text-slate-800 dark:text-slate-200">{log.wasteType}</div>
+                                                <div className="text-[10px] font-bold text-blue-600">{log.material}</div>
                                             </TableCell>
                                             <TableCell className="font-black text-lg">{log.weight} <span className="text-[10px] text-slate-400">kg</span></TableCell>
                                             <TableCell>
-                                                <Badge className={log.actionTaken === 'Pending' ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}>
+                                                <Badge className={log.actionTaken === 'Pending' ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"}>
                                                     {log.actionTaken}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 {log.actionTaken === "Pending" && (
                                                     <div className="flex justify-end gap-2">
-                                                        <Button size="sm" variant="outline" className="h-8 border-emerald-200 text-emerald-700 font-bold" onClick={() => handleUpdateStatus(log.id, "Recycled")}>
+                                                        <Button size="sm" variant="outline" className="h-8 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold" onClick={() => handleUpdateStatus(log.id, "Recycled")}>
                                                             <RefreshCcw className="mr-1 h-3 w-3" /> Grind
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" className="h-8 text-rose-600 font-bold" onClick={() => handleUpdateStatus(log.id, "Disposed")}>
+                                                        <Button size="sm" variant="ghost" className="h-8 text-blue-600 font-bold" onClick={() => handleUpdateStatus(log.id, "Disposed")}>
                                                             Dispose
                                                         </Button>
                                                     </div>

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { fetchWithAuth } from "@/lib/api";
 import {
     Table,
     TableBody,
@@ -86,11 +87,11 @@ export default function DispatchPage() {
     // 1. Fetch Data
     const fetchData = async () => {
         try {
-            const packRes = await fetch("http://localhost:5278/api/Packing");
+            const packRes = await fetchWithAuth("/Packing");
             const allPacked: PackingBatch[] = await packRes.json();
             setPackingList(allPacked);
 
-            const dispatchRes = await fetch("http://localhost:5278/api/Dispatch");
+            const dispatchRes = await fetchWithAuth("/Dispatch");
             const history: DispatchRecord[] = await dispatchRes.json();
             setDispatchHistory(history.sort((a,b) => b.id - a.id));
         } catch (error) {
@@ -123,7 +124,7 @@ export default function DispatchPage() {
                 remarks: "Dispatched from warehouse"
             };
 
-            const response = await fetch("http://localhost:5278/api/Dispatch", {
+            const response = await fetchWithAuth("/Dispatch", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -147,26 +148,26 @@ export default function DispatchPage() {
         <div className="space-y-6 p-2">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-indigo-900 border-l-4 border-l-indigo-500 pl-4">Dispatch & Logistics</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-blue-900 dark:text-blue-100 border-l-4 border-l-indigo-500 pl-4">Dispatch & Logistics</h1>
                     <p className="text-muted-foreground ml-4">Finalizing shipments, vehicle loading, and tax invoicing.</p>
                 </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-12">
                 {/* Packing Ready List */}
-                <Card className="md:col-span-8 shadow-xl border-indigo-100">
-                    <CardHeader className="bg-indigo-50 border-b">
-                        <CardTitle className="text-indigo-900 flex items-center gap-2"><PackageCheck className="h-5 w-5" /> Ready for Loading</CardTitle>
+                <Card className="md:col-span-8 shadow-xl border-blue-100 dark:border-blue-800 w-full overflow-hidden">
+                    <CardHeader className="bg-blue-50 dark:bg-blue-900/20 border-b">
+                        <CardTitle className="text-blue-900 dark:text-blue-100 flex items-center gap-2"><PackageCheck className="h-5 w-5" /> Ready for Loading</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-slate-50">
+                            <Table className="whitespace-nowrap">
+                                <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
                                     <TableRow>
-                                        <th className="p-4 text-left font-bold text-indigo-900">Packing ID</th>
-                                        <th className="p-4 text-left font-bold text-indigo-900">Customer / Item</th>
-                                        <th className="p-4 text-left font-bold text-indigo-900">Boxes</th>
-                                        <th className="p-4 text-left font-bold text-indigo-900">Action</th>
+                                        <th className="p-4 text-left font-bold text-blue-900 dark:text-blue-100">Packing ID</th>
+                                        <th className="p-4 text-left font-bold text-blue-900 dark:text-blue-100">Customer / Item</th>
+                                        <th className="p-4 text-left font-bold text-blue-900 dark:text-blue-100">Boxes</th>
+                                        <th className="p-4 text-left font-bold text-blue-900 dark:text-blue-100">Action</th>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -176,15 +177,15 @@ export default function DispatchPage() {
                                         <TableRow><TableCell colSpan={4} className="text-center py-20 text-muted-foreground italic">No items ready in warehouse.</TableCell></TableRow>
                                     ) : (
                                         packingList.map(item => (
-                                            <TableRow key={item.id} className="hover:bg-indigo-50/40 transition-all">
-                                                <TableCell className="font-black text-indigo-700">PCK-{item.id.toString().padStart(4, '0')}</TableCell>
+                                            <TableRow key={item.id} className="hover:bg-blue-50/40 dark:hover:bg-blue-900/40 transition-all">
+                                                <TableCell className="font-black text-blue-700 dark:text-blue-300">PCK-{item.id.toString().padStart(4, '0')}</TableCell>
                                                 <TableCell>
-                                                    <div className="font-bold text-slate-800">{item.finalQCRecord?.shopFloorRecord?.productionPlan?.order?.inquiry?.customerName || "Export Batch"}</div>
+                                                    <div className="font-bold text-slate-800 dark:text-slate-200">{item.finalQCRecord?.shopFloorRecord?.productionPlan?.order?.inquiry?.customerName || "Export Batch"}</div>
                                                     <div className="text-[10px] text-muted-foreground uppercase">{item.finalQCRecord?.shopFloorRecord?.productionPlan?.order?.inquiry?.description}</div>
                                                 </TableCell>
                                                 <TableCell className="font-bold">{item.numberOfBoxes} Cartons</TableCell>
                                                 <TableCell>
-                                                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 font-bold" onClick={() => { setSelectedPack(item); setDispatchOpen(true); }}>
+                                                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 font-bold" onClick={() => { setSelectedPack(item); setDispatchOpen(true); }}>
                                                         <Truck className="mr-2 h-4 w-4" /> Load & Ship
                                                     </Button>
                                                 </TableCell>
@@ -198,19 +199,19 @@ export default function DispatchPage() {
                 </Card>
 
                 {/* Logistics Stats */}
-                <Card className="md:col-span-4 h-fit shadow-md border-t-4 border-t-indigo-600">
+                <Card className="md:col-span-4 h-fit shadow-md border-t-4 border-t-indigo-600 w-full overflow-hidden">
                     <CardHeader><CardTitle className="text-sm">Logistics Monitor</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="p-4 bg-indigo-50 rounded-2xl flex justify-between items-center border border-indigo-100">
-                            <div><p className="text-[10px] font-black text-indigo-500 uppercase">Ships Today</p><p className="text-2xl font-black text-indigo-900">{dispatchHistory.length}</p></div>
-                            <Truck className="h-8 w-8 text-indigo-300 opacity-50" />
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex justify-between items-center border border-blue-100 dark:border-blue-800">
+                            <div><p className="text-[10px] font-black text-blue-500 uppercase">Ships Today</p><p className="text-2xl font-black text-blue-900 dark:text-blue-100">{dispatchHistory.length}</p></div>
+                            <Truck className="h-8 w-8 text-blue-300 opacity-50" />
                         </div>
                         <div className="space-y-2">
                             <p className="text-[10px] font-bold text-slate-500 uppercase ml-1">Recent Invoices</p>
                             {dispatchHistory.slice(0, 3).map(d => (
-                                <div key={d.id} className="p-3 border rounded-xl bg-slate-50 flex items-center justify-between">
-                                    <span className="text-xs font-bold text-slate-700">{d.invoiceNumber}</span>
-                                    <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 text-[9px]">{d.dispatchStatus}</Badge>
+                                <div key={d.id} className="p-3 border rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{d.invoiceNumber}</span>
+                                    <Badge className="bg-blue-100 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-[9px]">{d.dispatchStatus}</Badge>
                                 </div>
                             ))}
                         </div>
@@ -223,19 +224,19 @@ export default function DispatchPage() {
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold">Logistics Configuration</DialogTitle>
-                        <DialogDescription className="font-bold text-indigo-600">Shipping PCK-{selectedPack?.id.toString().padStart(4, '0')} • {selectedPack?.numberOfBoxes} Boxes</DialogDescription>
+                        <DialogDescription className="font-bold text-blue-600">Shipping PCK-{selectedPack?.id.toString().padStart(4, '0')} • {selectedPack?.numberOfBoxes} Boxes</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-5 py-4">
                         <div className="space-y-2">
-                            <Label className="text-indigo-900 font-bold">Destination Address</Label>
+                            <Label className="text-blue-900 dark:text-blue-100 font-bold">Destination Address</Label>
                             <div className="relative">
-                                <Input className="pl-10 h-12 border-indigo-200" placeholder="Street, City, Country" value={destination} onChange={(e) => setDestination(e.target.value)} />
-                                <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-indigo-400" />
+                                <Input className="pl-10 h-12 border-blue-200 dark:border-blue-800" placeholder="Street, City, Country" value={destination} onChange={(e) => setDestination(e.target.value)} />
+                                <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-blue-400" />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Vehicle Number</Label>
                                 <Input className="h-12 font-bold uppercase" placeholder="HR-55-XXXX" value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} />
@@ -246,20 +247,20 @@ export default function DispatchPage() {
                             </div>
                         </div>
 
-                        <div className="p-4 bg-slate-900 text-white rounded-3xl space-y-4 shadow-xl">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl space-y-4 shadow-xl border border-slate-200 dark:border-none">
                             <div className="flex justify-between items-center opacity-70">
-                                <span className="text-[10px] font-bold tracking-widest uppercase">Invoice Generation Preview</span>
+                                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-500 dark:text-slate-400">Invoice Generation Preview</span>
                                 <Receipt className="h-4 w-4" />
                             </div>
                             <div className="text-center space-y-1">
-                                <p className="text-2xl font-black text-indigo-400">INV-{new Date().getFullYear()}-XXXX</p>
-                                <p className="text-[10px] text-slate-400">Digital Tax Invoice will be generated on confirm.</p>
+                                <p className="text-2xl font-black text-blue-600 dark:text-blue-400">INV-{new Date().getFullYear()}-XXXX</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400">Digital Tax Invoice will be generated on confirm.</p>
                             </div>
                         </div>
                     </div>
 
                     <DialogFooter>
-                        <Button className="w-full bg-indigo-700 py-6 text-lg font-black shadow-lg shadow-indigo-200" onClick={handleConfirmDispatch} disabled={isLoading || !vehicleNo || !destination}>
+                        <Button className="w-full bg-blue-700 py-6 text-lg font-black shadow-lg shadow-blue-200" onClick={handleConfirmDispatch} disabled={isLoading || !vehicleNo || !destination}>
                              {isLoading ? <Loader2 className="animate-spin" /> : <><CheckCircle2 className="h-5 w-5 mr-2" /> Dispatch Shipment & Close Order</>}
                         </Button>
                     </DialogFooter>

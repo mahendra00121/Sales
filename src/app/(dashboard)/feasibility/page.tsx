@@ -38,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { fetchWithAuth } from "@/lib/api";
 
 // --- Types ---
 interface Inquiry {
@@ -104,13 +105,13 @@ export default function FeasibilityPage() {
     const fetchData = async () => {
         try {
             // Fetch All Inquiries
-            const inqRes = await fetch("http://localhost:5278/api/SalesInquiry");
+            const inqRes = await fetchWithAuth("/SalesInquiry");
             const allInq: Inquiry[] = await inqRes.json();
             // Filter only "New" status for pending
             setPendingInquiries(allInq.filter(i => i.status === "New"));
 
             // Fetch Recent Reviews
-            const reviewRes = await fetch("http://localhost:5278/api/FeasibilityReview");
+            const reviewRes = await fetchWithAuth("/FeasibilityReview");
             const reviews: ReviewData[] = await reviewRes.json();
             setCompletedReviews(reviews.sort((a, b) => b.id - a.id));
         } catch (error) {
@@ -146,7 +147,7 @@ export default function FeasibilityPage() {
                 status: isFeasible ? "Approved" : "Rejected"
             };
 
-            const response = await fetch("http://localhost:5278/api/FeasibilityReview", {
+            const response = await fetchWithAuth("/FeasibilityReview", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -180,32 +181,32 @@ export default function FeasibilityPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Pending Inquiries List */}
-                <Card className="col-span-1 border-l-4 border-l-yellow-500 shadow-sm">
+                <Card className="col-span-1 border-l-4 border-l-yellow-500 shadow-sm w-full overflow-hidden">
                     <CardHeader>
                         <CardTitle>Pending Reviews</CardTitle>
                         <CardDescription>Inquiries awaiting technical check</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {isFetching ? (
-                            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-teal-600" /></div>
+                            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-blue-600" /></div>
                         ) : pendingInquiries.length === 0 ? (
                             <p className="text-sm text-muted-foreground italic text-center py-10">No new inquiries.</p>
                         ) : (
                             pendingInquiries.map((inq) => (
                                 <div
                                     key={inq.id}
-                                    className="p-4 rounded-lg border bg-card hover:bg-teal-50 transition-colors cursor-pointer group"
+                                    className="p-4 rounded-lg border bg-card hover:bg-blue-50 dark:bg-blue-900/20 transition-colors cursor-pointer group"
                                     onClick={() => handleStartReview(inq)}
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <Badge variant="outline" className="bg-white">INQ-{inq.id.toString().padStart(4, '0')}</Badge>
+                                        <Badge variant="outline" className="bg-background">INQ-{inq.id.toString().padStart(4, '0')}</Badge>
                                         <span className="text-xs text-muted-foreground">{format(new Date(inq.inquiryDate), "dd MMM")}</span>
                                     </div>
-                                    <h4 className="font-semibold text-teal-900">{inq.customerName}</h4>
+                                    <h4 className="font-semibold text-blue-900 dark:text-blue-100">{inq.customerName}</h4>
                                     <p className="text-sm text-muted-foreground truncate">{inq.description}</p>
-                                    <div className="mt-3 flex items-center justify-between text-xs">
-                                        <span className="bg-white border px-2 py-1 rounded text-teal-700">Detailed Review Req.</span>
-                                        <span className="font-medium text-teal-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                    <div className="mt-3 flex flex-wrap items-center justify-between text-xs gap-2">
+                                        <span className="bg-background border px-2 py-1 rounded text-blue-700 dark:text-blue-300 whitespace-nowrap">Detailed Review Req.</span>
+                                        <span className="font-medium text-blue-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform whitespace-nowrap">
                                             Assess <ArrowRight className="h-3 w-3" />
                                         </span>
                                     </div>
@@ -216,7 +217,7 @@ export default function FeasibilityPage() {
                 </Card>
 
                 {/* Completed Reviews Log */}
-                <Card className="col-span-1 md:col-span-2 shadow-sm border-t-4 border-t-teal-600">
+                <Card className="col-span-1 md:col-span-2 shadow-sm border-t-4 border-t-teal-600 w-full overflow-hidden">
                     <CardHeader>
                         <CardTitle>Feasibility Logs</CardTitle>
                         <CardDescription>Database records of recently processed feasibilities</CardDescription>
@@ -224,7 +225,7 @@ export default function FeasibilityPage() {
                     <CardContent>
                         <ScrollArea className="h-[500px] pr-4">
                             {isFetching ? (
-                                <div className="flex justify-center p-10"><Loader2 className="animate-spin text-teal-600" /></div>
+                                <div className="flex justify-center p-10"><Loader2 className="animate-spin text-blue-600" /></div>
                             ) : completedReviews.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-muted-foreground opacity-50 border-2 border-dashed rounded-lg">
                                     <FileCheck className="h-10 w-10 mb-2" />
@@ -233,12 +234,12 @@ export default function FeasibilityPage() {
                             ) : (
                                 <div className="space-y-4">
                                     {completedReviews.map((review) => (
-                                        <div key={review.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-teal-800">INQ-{review.inquiryId.toString().padStart(4, '0')}</span>
+                                        <div key={review.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow gap-3">
+                                            <div className="overflow-hidden">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="font-bold text-blue-800 dark:text-blue-200">INQ-{review.inquiryId.toString().padStart(4, '0')}</span>
                                                     <Badge className={cn(
-                                                        review.isFeasible ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-red-100 text-red-700 hover:bg-red-100"
+                                                        review.isFeasible ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : "bg-blue-100 text-blue-700 hover:bg-blue-100"
                                                     )}>
                                                         {review.isFeasible ? "Feasible" : "Not Feasible"}
                                                     </Badge>
@@ -246,8 +247,8 @@ export default function FeasibilityPage() {
                                                 <p className="text-sm font-medium mt-1">{review.inquiry?.customerName || "Customer"}</p>
                                                 <p className="text-xs text-muted-foreground italic mt-1 max-w-[400px] truncate">{review.technicalNotes}</p>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-xs font-semibold text-teal-600">{review.reviewedBy}</p>
+                                            <div className="text-left sm:text-right shrink-0">
+                                                <p className="text-xs font-semibold text-blue-600">{review.reviewedBy}</p>
                                                 <p className="text-[10px] text-muted-foreground">{format(new Date(review.reviewDate), "dd MMM yyyy HH:mm")}</p>
                                             </div>
                                         </div>
@@ -264,7 +265,7 @@ export default function FeasibilityPage() {
                 <DialogContent className="sm:max-w-[700px] w-full max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            <HardHat className="h-5 w-5 text-orange-600" />
+                            <HardHat className="h-5 w-5 text-blue-600" />
                             Technical Review: INQ-{selectedInquiry?.id.toString().padStart(4, '0')}
                         </DialogTitle>
                         <DialogDescription>
@@ -273,14 +274,14 @@ export default function FeasibilityPage() {
                     </DialogHeader>
 
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Engineering</Badge>
-                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Production</Badge>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">QC</Badge>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">Engineering</Badge>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Production</Badge>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">QC</Badge>
                         </div>
 
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                            <div className="space-y-3 border p-4 rounded-lg bg-muted/20">
+                            <div className="space-y-3 border p-4 rounded-lg bg-muted/20 dark:bg-muted/10">
                                 <h3 className="font-semibold text-sm flex items-center gap-2">
                                     <Cog className="h-4 w-4" /> 1. Mold Assessment (Engineering)
                                 </h3>
@@ -365,8 +366,8 @@ export default function FeasibilityPage() {
                                     type="submit"
                                     disabled={isLoading}
                                     className={`${form.watch("materialAvailable") && form.watch("machineAvailable") && form.watch("drawingsReviewed")
-                                        ? "bg-green-600 hover:bg-green-700"
-                                        : "bg-red-600 hover:bg-red-700"
+                                        ? "bg-blue-600 hover:bg-blue-700"
+                                        : "bg-blue-600 hover:bg-blue-700"
                                         }`}
                                 >
                                     {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : (

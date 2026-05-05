@@ -32,6 +32,12 @@ import {
     SheetTrigger,
     SheetTitle,
 } from "@/components/ui/sheet";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const menuGroups = [
     {
@@ -71,6 +77,12 @@ const menuGroups = [
         items: [
             { label: "Waste Handling", href: "/waste", icon: Recycle },
         ]
+    },
+    {
+        group: "Configuration",
+        items: [
+            { label: "Master Data", href: "/master-data", icon: Settings },
+        ]
     }
 ];
 
@@ -84,7 +96,12 @@ export function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
 
-
+    const handleLogout = () => {
+        localStorage.clear();
+        sessionStorage.clear();
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        router.push("/login");
+    };
     const NavContent = ({ className, collapsed = false }: NavContentProps) => (
         <div className={cn("flex flex-col h-full py-4", className)}>
             <div className={cn("px-6 mb-6 flex items-center gap-2 font-bold text-xl transition-all", collapsed ? "justify-center px-2" : "")}>
@@ -92,7 +109,7 @@ export function Sidebar() {
                     <Factory className="h-6 w-6" />
                 </div>
                 {!collapsed && (
-                    <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent truncate">
+                    <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent truncate">
                         PolyTrack
                     </span>
                 )}
@@ -109,19 +126,30 @@ export function Sidebar() {
                             )}
                             <div className="space-y-1">
                                 {group.items.map((item) => (
-                                    <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
-                                        <Button
-                                            variant={pathname === item.href ? "secondary" : "ghost"}
-                                            className={cn(
-                                                "w-full transition-all duration-200",
-                                                pathname === item.href ? "bg-secondary font-medium" : "hover:bg-transparent hover:underline",
-                                                collapsed ? "justify-center px-2" : "justify-start"
+                                    <TooltipProvider delayDuration={0} key={item.href}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Link href={item.href} onClick={() => setOpen(false)} className="block w-full">
+                                                    <Button
+                                                        variant={pathname === item.href ? "secondary" : "ghost"}
+                                                        className={cn(
+                                                            "w-full transition-all duration-200",
+                                                            pathname === item.href ? "bg-secondary font-medium" : "hover:bg-transparent hover:underline",
+                                                            collapsed ? "justify-center px-2" : "justify-start"
+                                                        )}
+                                                    >
+                                                        <item.icon className={cn("h-4 w-4", collapsed ? "" : "mr-3", pathname === item.href ? "text-primary" : "text-muted-foreground")} />
+                                                        {!collapsed && <span>{item.label}</span>}
+                                                    </Button>
+                                                </Link>
+                                            </TooltipTrigger>
+                                            {collapsed && (
+                                                <TooltipContent side="right" sideOffset={15} className="font-bold text-sm bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xl border-none">
+                                                    {item.label}
+                                                </TooltipContent>
                                             )}
-                                        >
-                                            <item.icon className={cn("h-4 w-4", collapsed ? "" : "mr-3", pathname === item.href ? "text-primary" : "text-muted-foreground")} />
-                                            {!collapsed && <span>{item.label}</span>}
-                                        </Button>
-                                    </Link>
+                                        </Tooltip>
+                                    </TooltipProvider>
                                 ))}
                             </div>
                         </div>
@@ -191,13 +219,17 @@ export function Sidebar() {
                     <div className="bg-primary/10 text-primary p-1.5 rounded-lg">
                         <Factory className="h-5 w-5" />
                     </div>
-                    <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
                         PolyTrack
                     </span>
                 </div>
 
                 <div className="ml-auto flex items-center gap-2">
                     <ModeToggle />
+                    <Button variant="ghost" size="icon" onClick={handleLogout} className="text-blue-500 hover:text-blue-600 hover:bg-blue-50">
+                        <LogOut className="h-5 w-5" />
+                        <span className="sr-only">Logout</span>
+                    </Button>
                 </div>
             </div>
         </>

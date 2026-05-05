@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { fetchWithAuth } from "@/lib/api";
 
 // Define Schema matching Backend Requirements
 const formSchema = z.object({
@@ -81,8 +82,17 @@ type SalesInquiryData = {
     status: string;
 };
 
+type MasterData = {
+    id: number;
+    name: string;
+    category: string;
+    isActive: boolean;
+};
+
 export default function SalesInquiryPage() {
     const [inquiries, setInquiries] = useState<SalesInquiryData[]>([]);
+    const [productTypes, setProductTypes] = useState<MasterData[]>([]);
+    const [materials, setMaterials] = useState<MasterData[]>([]);
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -102,7 +112,7 @@ export default function SalesInquiryPage() {
     // 1. Fetch Inquiries from Backend
     const fetchInquiries = async () => {
         try {
-            const response = await fetch("http://localhost:5278/api/SalesInquiry");
+            const response = await fetchWithAuth("/SalesInquiry");
             if (response.ok) {
                 const data = await response.json();
                 setInquiries(data);
@@ -114,8 +124,23 @@ export default function SalesInquiryPage() {
         }
     };
 
+    const fetchMasterData = async () => {
+        try {
+            const [ptRes, mRes] = await Promise.all([
+                fetchWithAuth("/MasterData?category=ProductType"),
+                fetchWithAuth("/MasterData?category=MaterialPreference")
+            ]);
+
+            if (ptRes.ok) setProductTypes((await ptRes.json()).filter((item: MasterData) => item.isActive));
+            if (mRes.ok) setMaterials((await mRes.json()).filter((item: MasterData) => item.isActive));
+        } catch (error) {
+            console.error("Failed to fetch master data:", error);
+        }
+    };
+
     useEffect(() => {
         fetchInquiries();
+        fetchMasterData();
     }, []);
 
     // 2. Submit New Inquiry to Backend
@@ -133,7 +158,7 @@ export default function SalesInquiryPage() {
                 status: "New"
             };
 
-            const response = await fetch("http://localhost:5278/api/SalesInquiry", {
+            const response = await fetchWithAuth("/SalesInquiry", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -165,7 +190,7 @@ export default function SalesInquiryPage() {
                 </div>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
-                        <Button className="w-full md:w-auto bg-teal-600 hover:bg-teal-700">
+                        <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700">
                             <Plus className="mr-2 h-4 w-4" /> New Inquiry
                         </Button>
                     </DialogTrigger>
@@ -186,7 +211,7 @@ export default function SalesInquiryPage() {
                                         {...form.register("customerName")}
                                     />
                                     {form.formState.errors.customerName && (
-                                        <p className="text-red-500 text-xs">{form.formState.errors.customerName.message}</p>
+                                        <p className="text-blue-500 text-xs">{form.formState.errors.customerName.message}</p>
                                     )}
                                 </div>
                                 <div className="space-y-2">
@@ -197,7 +222,7 @@ export default function SalesInquiryPage() {
                                         {...form.register("contactPerson")}
                                     />
                                     {form.formState.errors.contactPerson && (
-                                        <p className="text-red-500 text-xs">{form.formState.errors.contactPerson.message}</p>
+                                        <p className="text-blue-500 text-xs">{form.formState.errors.contactPerson.message}</p>
                                     )}
                                 </div>
                             </div>
@@ -230,11 +255,14 @@ export default function SalesInquiryPage() {
                                             <SelectValue placeholder="Select Product" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Food Tray">Food Tray</SelectItem>
-                                            <SelectItem value="Blister Pack">Blister Pack</SelectItem>
-                                            <SelectItem value="Clamshell">Clamshell</SelectItem>
-                                            <SelectItem value="Industrial Tray">Industrial Tray</SelectItem>
-                                            <SelectItem value="Other">Other</SelectItem>
+                                            {productTypes.map((type) => (
+                                                <SelectItem key={type.id} value={type.name}>
+                                                    {type.name}
+                                                </SelectItem>
+                                            ))}
+                                            {productTypes.length === 0 && (
+                                                <SelectItem value="none" disabled>No products configured</SelectItem>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -245,11 +273,14 @@ export default function SalesInquiryPage() {
                                             <SelectValue placeholder="Select Material" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="PET">PET (Polyethylene Terephthalate)</SelectItem>
-                                            <SelectItem value="PVC">PVC (Polyvinyl Chloride)</SelectItem>
-                                            <SelectItem value="HIPS">HIPS (High Impact Polystyrene)</SelectItem>
-                                            <SelectItem value="PP">PP (Polypropylene)</SelectItem>
-                                            <SelectItem value="Biodegradable">Biodegradable / PLA</SelectItem>
+                                            {materials.map((mat) => (
+                                                <SelectItem key={mat.id} value={mat.name}>
+                                                    {mat.name}
+                                                </SelectItem>
+                                            ))}
+                                            {materials.length === 0 && (
+                                                <SelectItem value="none" disabled>No materials configured</SelectItem>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -297,7 +328,7 @@ export default function SalesInquiryPage() {
                             </div>
 
                             <DialogFooter>
-                                <Button type="submit" disabled={isLoading} className="bg-teal-600 hover:bg-teal-700">
+                                <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
                                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit Inquiry"}
                                 </Button>
                             </DialogFooter>
@@ -332,7 +363,7 @@ export default function SalesInquiryPage() {
                                 {isFetching ? (
                                     <TableRow>
                                         <TableCell colSpan={8} className="text-center py-10">
-                                            <Loader2 className="h-8 w-8 animate-spin mx-auto text-teal-600" />
+                                            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
                                             <p className="mt-2 text-muted-foreground">Loading inquiries...</p>
                                         </TableCell>
                                     </TableRow>
@@ -353,16 +384,16 @@ export default function SalesInquiryPage() {
                                             <TableCell>{format(new Date(inquiry.inquiryDate), "dd MMM yyyy")}</TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className={cn(
-                                                    inquiry.status === "New" && "bg-blue-50 text-blue-700 border-blue-200",
-                                                    inquiry.status === "FeasibilityApproved" && "bg-green-50 text-green-700 border-green-200",
-                                                    inquiry.status === "Rejected" && "bg-red-50 text-red-700 border-red-200"
+                                                    inquiry.status === "New" && "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+                                                    inquiry.status === "FeasibilityApproved" && "bg-blue-50 text-blue-700 border-blue-200",
+                                                    inquiry.status === "Rejected" && "bg-blue-50 text-blue-700 border-blue-200"
                                                 )}>
                                                     {inquiry.status}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="icon">
-                                                    <FileSearch className="h-4 w-4 text-teal-600" />
+                                                    <FileSearch className="h-4 w-4 text-blue-600" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
