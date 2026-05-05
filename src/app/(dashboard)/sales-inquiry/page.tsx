@@ -96,6 +96,9 @@ export default function SalesInquiryPage() {
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
+    const [otpStep, setOtpStep] = useState(false);
+    const [tempInquiryId, setTempInquiryId] = useState<number | null>(null);
+    const [otpValue, setOtpValue] = useState("");
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -165,14 +168,48 @@ export default function SalesInquiryPage() {
             });
 
             if (response.ok) {
-                await fetchInquiries(); // Refresh list
-                setOpen(false);
-                form.reset();
+                const data = await response.json();
+                setTempInquiryId(data.id);
+                setOtpStep(true); // Move to OTP step
             } else {
-                alert("Failed to submit inquiry");
+                alert("Failed to initiate inquiry verification");
             }
         } catch (error) {
             console.error("Submission Error:", error);
+            alert("Error connecting to server");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function handleVerifyOtp() {
+        if (!tempInquiryId || !otpValue) return;
+        setIsLoading(true);
+
+        try {
+            const response = await fetchWithAuth("/SalesInquiry/verify-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    inquiryId: tempInquiryId,
+                    otp: otpValue
+                }),
+            });
+
+            if (response.ok) {
+                await fetchInquiries();
+                setOpen(false);
+                setOtpStep(false);
+                setTempInquiryId(null);
+                setOtpValue("");
+                form.reset();
+                alert("Inquiry submitted and verified successfully!");
+            } else {
+                const error = await response.text();
+                alert(error || "Invalid OTP. Please try again.");
+            }
+        } catch (error) {
+            console.error("Verification Error:", error);
             alert("Error connecting to server");
         } finally {
             setIsLoading(false);
@@ -188,7 +225,14 @@ export default function SalesInquiryPage() {
                         Capture and track new customer inquiries and leads.
                     </p>
                 </div>
-                <Dialog open={open} onOpenChange={setOpen}>
+                <Dialog open={open} onOpenChange={(val) => {
+                    setOpen(val);
+                    if (!val) {
+                        setOtpStep(false);
+                        setTempInquiryId(null);
+                        setOtpValue("");
+                    }
+                }}>
                     <DialogTrigger asChild>
                         <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700">
                             <Plus className="mr-2 h-4 w-4" /> New Inquiry
@@ -196,12 +240,39 @@ export default function SalesInquiryPage() {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[600px] w-full max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle>Create New Inquiry</DialogTitle>
+                            <DialogTitle>{otpStep ? "Verify Your Email" : "Create New Inquiry"}</DialogTitle>
                             <DialogDescription>
-                                Enter customer details and product requirements here.
+                                {otpStep 
+                                    ? "We have sent a 6-digit code to your email. Please enter it below to confirm." 
+                                    : "Enter customer details and product requirements here."}
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+                        {otpStep ? (
+                            <div className="space-y-6 py-6">
+                                <div className="space-y-4">
+                                    <Label className="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">Verification Code</Label>
+                                    <Input 
+                                        className="text-center text-3xl font-black tracking-[15px] h-16 border-2 border-blue-100 focus:border-blue-600 rounded-2xl"
+                                        placeholder="000000"
+                                        maxLength={6}
+                                        value={otpValue}
+                                        onChange={(e) => setOtpValue(e.target.value)}
+                                    />
+                                </div>
+                                <Button 
+                                    onClick={handleVerifyOtp} 
+                                    disabled={isLoading || otpValue.length < 6}
+                                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-lg font-bold rounded-xl"
+                                >
+                                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Verify & Submit"}
+                                </Button>
+                                <p className="text-center text-xs text-slate-400">
+                                    Didn't receive the code? <button type="button" className="text-blue-600 font-bold hover:underline" onClick={() => setOtpStep(false)}>Go Back</button>
+                                </p>
+                            </div>
+                        ) : (
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="customerName">Customer Name</Label>
@@ -333,6 +404,7 @@ export default function SalesInquiryPage() {
                                 </Button>
                             </DialogFooter>
                         </form>
+                        )}
                     </DialogContent>
                 </Dialog>
             </div>
