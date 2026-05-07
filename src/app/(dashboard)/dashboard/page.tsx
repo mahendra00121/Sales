@@ -3,13 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Bar,
   BarChart,
-  CartesianGrid,
+  Bar,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  AreaChart,
+  Area
 } from "recharts";
 import {
   Users,
@@ -54,6 +60,9 @@ export default function DashboardPage() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [machineStatus, setMachineStatus] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<any>(null);
+
+  const COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"];
 
   const fetchData = async () => {
     try {
@@ -80,6 +89,13 @@ export default function DashboardPage() {
 
       setRecentOrders(orders.slice(-5).reverse());
       setMachineStatus(activePlans.slice(0, 3));
+
+      // 4. Fetch Analytics
+      const analyticsRes = await fetchWithAuth("/Dashboard/analytics");
+      if (analyticsRes.ok) {
+        const data = await analyticsRes.json();
+        setAnalytics(data);
+      }
       
     } catch (error) {
       console.error("Dashboard fetch error:", error);
@@ -176,6 +192,86 @@ export default function DashboardPage() {
               OPTIMIZED
             </p>
           </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        {/* Monthly Trends - Bar Chart */}
+        <Card className="col-span-4 border-none shadow-xl rounded-3xl bg-white dark:bg-slate-900 overflow-hidden">
+            <CardHeader>
+                <CardTitle className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-blue-600" /> Inquiry Velocity
+                </CardTitle>
+                <CardDescription>Monthly lead generation performance (Last 6 Months)</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={analytics?.monthlyInquiries || []}>
+                        <defs>
+                            <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis 
+                            dataKey="month" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 700}} 
+                        />
+                        <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 700}} 
+                        />
+                        <Tooltip 
+                            contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                        />
+                        <Area 
+                            type="monotone" 
+                            dataKey="count" 
+                            stroke="#2563eb" 
+                            strokeWidth={4}
+                            fillOpacity={1} 
+                            fill="url(#colorCount)" 
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+
+        {/* Status Distribution - Pie Chart */}
+        <Card className="col-span-3 border-none shadow-xl rounded-3xl bg-white dark:bg-slate-900 overflow-hidden">
+            <CardHeader>
+                <CardTitle className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-blue-600" /> Lifecycle Status
+                </CardTitle>
+                <CardDescription>Distribution of active inquiries</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={analytics?.statusDistribution || []}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                        >
+                            {analytics?.statusDistribution?.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip 
+                            contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                        />
+                        <Legend verticalAlign="bottom" height={36}/>
+                    </PieChart>
+                </ResponsiveContainer>
+            </CardContent>
         </Card>
       </div>
 

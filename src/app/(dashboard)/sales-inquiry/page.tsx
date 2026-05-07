@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,6 +10,16 @@ import {
     FileSearch,
     Plus,
     Loader2,
+    ShieldCheck,
+    Mail,
+    Download,
+    FileSpreadsheet,
+    FileText as FilePdf,
+    FileJson,
+    Search,
+    Filter,
+    X,
+    CalendarDays
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -53,9 +63,18 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { fetchWithAuth } from "@/lib/api";
+import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
 
 // Define Schema matching Backend Requirements
 const formSchema = z.object({
@@ -98,7 +117,14 @@ export default function SalesInquiryPage() {
     const [isFetching, setIsFetching] = useState(true);
     const [otpStep, setOtpStep] = useState(false);
     const [tempInquiryId, setTempInquiryId] = useState<number | null>(null);
-    const [otpValue, setOtpValue] = useState("");
+    const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+    const [otpError, setOtpError] = useState<string | null>(null);
+    const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+    // Filter States
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -183,8 +209,10 @@ export default function SalesInquiryPage() {
     }
 
     async function handleVerifyOtp() {
-        if (!tempInquiryId || !otpValue) return;
+        const otpValue = otpDigits.join("");
+        if (!tempInquiryId || otpValue.length < 6) return;
         setIsLoading(true);
+        setOtpError(null);
 
         try {
             const response = await fetchWithAuth("/SalesInquiry/verify-otp", {
@@ -201,12 +229,13 @@ export default function SalesInquiryPage() {
                 setOpen(false);
                 setOtpStep(false);
                 setTempInquiryId(null);
-                setOtpValue("");
+                setOtpDigits(["", "", "", "", "", ""]);
+                setOtpError(null);
                 form.reset();
-                alert("Inquiry submitted and verified successfully!");
+                // alert("Inquiry submitted and verified successfully!"); 
             } else {
                 const error = await response.text();
-                alert(error || "Invalid OTP. Please try again.");
+                setOtpError(error || "Invalid OTP. Please try again.");
             }
         } catch (error) {
             console.error("Verification Error:", error);
@@ -215,6 +244,58 @@ export default function SalesInquiryPage() {
             setIsLoading(false);
         }
     }
+
+    const handleExportExcel = () => {
+        const dataToExport = inquiries.map(iq => ({
+            "Inquiry ID": `INQ-${iq.id.toString().padStart(4, '0')}`,
+            "Customer Name": iq.customerName,
+            "Contact Person": iq.contactPerson,
+            "Description": iq.description,
+            "Quantity": iq.quantityRequested?.toLocaleString() || "0",
+            "Date": format(new Date(iq.inquiryDate), "dd MMM yyyy"),
+            "Status": iq.status
+        }));
+        exportToExcel(dataToExport, `Sales_Inquiries_${format(new Date(), "yyyyMMdd")}`);
+    };
+
+    const handleExportPDF = () => {
+        const headers = ["ID", "Customer", "Contact", "Quantity", "Date", "Status"];
+        const data = inquiries.map(iq => [
+            `INQ-${iq.id.toString().padStart(4, '0')}`,
+            iq.customerName,
+            iq.contactPerson,
+            iq.quantityRequested?.toLocaleString() || "0",
+            format(new Date(iq.inquiryDate), "dd MMM yyyy"),
+            iq.status
+        ]);
+        exportToPDF(headers, data, `Sales_Inquiries_${format(new Date(), "yyyyMMdd")}`, "Sales Inquiry Report");
+    };
+
+    const filteredInquiries = inquiries.filter(iq => {
+        const matchesSearch = iq.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              `INQ-${iq.id.toString().padStart(4, '0')}`.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === "All" || iq.status === statusFilter;
+        
+        const iqDate = new Date(iq.inquiryDate);
+        iqDate.setHours(0,0,0,0);
+        
+        const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+        if (fromDate) fromDate.setHours(0,0,0,0);
+        
+        const toDate = dateRange.to ? new Date(dateRange.to) : null;
+        if (toDate) toDate.setHours(23,59,59,999);
+
+        const matchesDate = (!fromDate || iqDate >= fromDate) && 
+                            (!toDate || iqDate <= toDate);
+        
+        return matchesSearch && matchesStatus && matchesDate;
+    });
+
+    const resetFilters = () => {
+        setSearchQuery("");
+        setStatusFilter("All");
+        setDateRange({ from: undefined, to: undefined });
+    };
 
     return (
         <div className="space-y-6">
@@ -225,196 +306,304 @@ export default function SalesInquiryPage() {
                         Capture and track new customer inquiries and leads.
                     </p>
                 </div>
-                <Dialog open={open} onOpenChange={(val) => {
-                    setOpen(val);
-                    if (!val) {
-                        setOtpStep(false);
-                        setTempInquiryId(null);
-                        setOtpValue("");
-                    }
-                }}>
-                    <DialogTrigger asChild>
-                        <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700">
-                            <Plus className="mr-2 h-4 w-4" /> New Inquiry
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px] w-full max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>{otpStep ? "Verify Your Email" : "Create New Inquiry"}</DialogTitle>
-                            <DialogDescription>
-                                {otpStep 
-                                    ? "We have sent a 6-digit code to your email. Please enter it below to confirm." 
-                                    : "Enter customer details and product requirements here."}
-                            </DialogDescription>
-                        </DialogHeader>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full md:w-auto border-blue-200 text-blue-600 hover:bg-blue-50 font-bold rounded-xl h-11">
+                                <Download className="mr-2 h-4 w-4" /> Export Report
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="rounded-2xl w-56 p-2 shadow-2xl border-none bg-white dark:bg-slate-900">
+                            <DropdownMenuLabel className="text-xs font-black uppercase text-slate-400 p-2">Select Format</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleExportExcel} className="rounded-xl py-3 cursor-pointer font-bold group">
+                                <FileSpreadsheet className="mr-3 h-4 w-4 text-green-600" /> Export to Excel
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleExportPDF} className="rounded-xl py-3 cursor-pointer font-bold group">
+                                <FilePdf className="mr-3 h-4 w-4 text-rose-600" /> Export to PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
-                        {otpStep ? (
-                            <div className="space-y-6 py-6">
-                                <div className="space-y-4">
-                                    <Label className="text-center block text-sm font-bold text-slate-500 uppercase tracking-widest">Verification Code</Label>
-                                    <Input 
-                                        className="text-center text-3xl font-black tracking-[15px] h-16 border-2 border-blue-100 focus:border-blue-600 rounded-2xl"
-                                        placeholder="000000"
-                                        maxLength={6}
-                                        value={otpValue}
-                                        onChange={(e) => setOtpValue(e.target.value)}
-                                    />
-                                </div>
-                                <Button 
-                                    onClick={handleVerifyOtp} 
-                                    disabled={isLoading || otpValue.length < 6}
-                                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-lg font-bold rounded-xl"
-                                >
-                                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Verify & Submit"}
-                                </Button>
-                                <p className="text-center text-xs text-slate-400">
-                                    Didn't receive the code? <button type="button" className="text-blue-600 font-bold hover:underline" onClick={() => setOtpStep(false)}>Go Back</button>
-                                </p>
-                            </div>
-                        ) : (
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="customerName">Customer Name</Label>
-                                    <Input
-                                        id="customerName"
-                                        placeholder="e.g. Acme Corp"
-                                        {...form.register("customerName")}
-                                    />
-                                    {form.formState.errors.customerName && (
-                                        <p className="text-blue-500 text-xs">{form.formState.errors.customerName.message}</p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="contactPerson">Contact Person</Label>
-                                    <Input
-                                        id="contactPerson"
-                                        placeholder="e.g. John Doe"
-                                        {...form.register("contactPerson")}
-                                    />
-                                    {form.formState.errors.contactPerson && (
-                                        <p className="text-blue-500 text-xs">{form.formState.errors.contactPerson.message}</p>
-                                    )}
-                                </div>
-                            </div>
+                    <Dialog open={open} onOpenChange={(val) => {
+                        setOpen(val);
+                        if (!val) {
+                            setOtpStep(false);
+                            setTempInquiryId(null);
+                            setOtpDigits(["", "", "", "", "", ""]);
+                            setOtpError(null);
+                        }
+                    }}>
+                        <DialogTrigger asChild>
+                            <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 font-bold rounded-xl h-11 px-6 shadow-lg shadow-blue-100 dark:shadow-none">
+                                <Plus className="mr-2 h-4 w-4" /> New Inquiry
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px] w-full max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle>{otpStep ? "Verify Your Email" : "Create New Inquiry"}</DialogTitle>
+                                <DialogDescription>
+                                    {otpStep 
+                                        ? "We have sent a 6-digit code to your email. Please enter it below to confirm." 
+                                        : "Enter customer details and product requirements here."}
+                                </DialogDescription>
+                            </DialogHeader>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="contactEmail">Email</Label>
-                                    <Input
-                                        id="contactEmail"
-                                        type="email"
-                                        placeholder="client@example.com"
-                                        {...form.register("contactEmail")}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="contactNumber">Contact Number</Label>
-                                    <Input
-                                        id="contactNumber"
-                                        placeholder="+91 XXXXX XXXXX"
-                                        {...form.register("contactNumber")}
-                                    />
-                                </div>
-                            </div>
+                            {otpStep ? (
+                                <div className="space-y-8 py-8 animate-in fade-in zoom-in duration-300">
+                                    <div className="flex flex-col items-center justify-center space-y-4">
+                                        <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-2">
+                                            <ShieldCheck className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Confirm Identity</h3>
+                                            <p className="text-sm text-slate-500 mt-1">We've sent a code to your registered email</p>
+                                        </div>
+                                    </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Product Type</Label>
-                                    <Select onValueChange={(v) => form.setValue("productType", v)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Product" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {productTypes.map((type) => (
-                                                <SelectItem key={type.id} value={type.name}>
-                                                    {type.name}
-                                                </SelectItem>
-                                            ))}
-                                            {productTypes.length === 0 && (
-                                                <SelectItem value="none" disabled>No products configured</SelectItem>
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center gap-2 mb-2">
+                                                <Mail className="h-4 w-4 text-slate-400" />
+                                                <span className="text-xs font-medium text-slate-500 uppercase tracking-widest">Verification Code</span>
+                                            </div>
+                                            
+                                            <div className="flex justify-center gap-2 md:gap-4">
+                                                {otpDigits.map((digit, index) => (
+                                                    <Input
+                                                        key={index}
+                                                        ref={(el) => { otpRefs.current[index] = el; }}
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        maxLength={1}
+                                                        className="w-10 h-14 md:w-14 md:h-16 text-center text-2xl font-bold border-2 border-blue-100 dark:border-blue-900/30 focus:border-blue-600 dark:focus:border-blue-400 rounded-xl bg-white dark:bg-slate-900"
+                                                        value={digit}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/\D/g, "");
+                                                            const newDigits = [...otpDigits];
+                                                            newDigits[index] = val ? val.substring(val.length - 1) : "";
+                                                            setOtpDigits(newDigits);
+                                                            setOtpError(null);
+                                                            if (val && index < 5) {
+                                                                otpRefs.current[index + 1]?.focus();
+                                                            }
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+                                                                otpRefs.current[index - 1]?.focus();
+                                                            } else if (e.key === "ArrowRight" && index < 5) {
+                                                                otpRefs.current[index + 1]?.focus();
+                                                            } else if (e.key === "ArrowLeft" && index > 0) {
+                                                                otpRefs.current[index - 1]?.focus();
+                                                            }
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+
+                                            {otpError && (
+                                                <div className="flex items-center justify-center gap-2 text-rose-600 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg">
+                                                    <span className="text-sm font-semibold">{otpError}</span>
+                                                </div>
                                             )}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Material Preference</Label>
-                                    <Select onValueChange={(v) => form.setValue("material", v)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Material" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {materials.map((mat) => (
-                                                <SelectItem key={mat.id} value={mat.name}>
-                                                    {mat.name}
-                                                </SelectItem>
-                                            ))}
-                                            {materials.length === 0 && (
-                                                <SelectItem value="none" disabled>No materials configured</SelectItem>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="quantity">Quantity</Label>
-                                    <Input
-                                        id="quantity"
-                                        type="number"
-                                        placeholder="e.g. 50000"
-                                        {...form.register("quantity")}
-                                    />
-                                </div>
-                                <div className="space-y-2 flex flex-col">
-                                    <Label className="mb-2">Target Delivery Date</Label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !form.watch("targetDate") && "text-muted-foreground")}>
-                                                {form.watch("targetDate") ? format(form.watch("targetDate"), "PPP") : <span>Pick a date</span>}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </div>
+                                        
+                                        <div className="pt-2">
+                                            <Button 
+                                                onClick={handleVerifyOtp} 
+                                                disabled={isLoading || otpDigits.some(d => !d)}
+                                                className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-lg font-bold rounded-2xl transition-all"
+                                            >
+                                                {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : "Complete Verification"}
                                             </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={form.watch("targetDate")}
-                                                onSelect={(date) => date && form.setValue("targetDate", date)}
-                                                disabled={(date) => date < new Date()}
-                                                initialFocus
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
+                                        </div>
+
+                                        <div className="flex justify-center pt-4">
+                                            <button 
+                                                type="button" 
+                                                className="text-sm text-slate-500 hover:text-blue-600 font-medium transition-colors flex items-center gap-1" 
+                                                onClick={() => setOtpStep(false)}
+                                            >
+                                                ← Back to form
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="customerName">Customer Name</Label>
+                                            <Input id="customerName" {...form.register("customerName")} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contactPerson">Contact Person</Label>
+                                            <Input id="contactPerson" {...form.register("contactPerson")} />
+                                        </div>
+                                    </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="specialReq">Special Requirements</Label>
-                                <Textarea
-                                    id="specialReq"
-                                    placeholder="Enter any custom requirements..."
-                                    {...form.register("specialReq")}
-                                />
-                            </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contactEmail">Email</Label>
+                                            <Input id="contactEmail" type="email" {...form.register("contactEmail")} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contactNumber">Contact Number</Label>
+                                            <Input id="contactNumber" {...form.register("contactNumber")} />
+                                        </div>
+                                    </div>
 
-                            <DialogFooter>
-                                <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
-                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit Inquiry"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                        )}
-                    </DialogContent>
-                </Dialog>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Product Type</Label>
+                                            <Select onValueChange={(v) => form.setValue("productType", v)}>
+                                                <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
+                                                <SelectContent>
+                                                    {productTypes.map((type) => (
+                                                        <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Material Preference</Label>
+                                            <Select onValueChange={(v) => form.setValue("material", v)}>
+                                                <SelectTrigger><SelectValue placeholder="Select Material" /></SelectTrigger>
+                                                <SelectContent>
+                                                    {materials.map((mat) => (
+                                                        <SelectItem key={mat.id} value={mat.name}>{mat.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="quantity">Quantity</Label>
+                                            <Input id="quantity" type="number" {...form.register("quantity")} />
+                                        </div>
+                                        <div className="space-y-2 flex flex-col">
+                                            <Label className="mb-2">Target Delivery Date</Label>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !form.watch("targetDate") && "text-muted-foreground")}>
+                                                        {form.watch("targetDate") ? format(form.watch("targetDate"), "PPP") : <span>Pick a date</span>}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={form.watch("targetDate")}
+                                                        onSelect={(date) => date && form.setValue("targetDate", date)}
+                                                        disabled={(date) => date < new Date()}
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="specialReq">Special Requirements</Label>
+                                        <Textarea id="specialReq" {...form.register("specialReq")} />
+                                    </div>
+
+                                    <DialogFooter>
+                                        <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
+                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit Inquiry"}
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
-            <Card>
+            {/* Advanced Filters Section */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <Filter className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">Search & Filters</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="md:col-span-4 relative group">
+                        <Search className="absolute left-3 top-3.2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Input 
+                            placeholder="Search Customer or Inquiry ID..." 
+                            className="pl-10 h-11 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-none"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="md:col-span-3">
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-none">
+                                <SelectValue placeholder="Status: All" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-none shadow-2xl">
+                                <SelectItem value="All">All Statuses</SelectItem>
+                                <SelectItem value="New">New Inquiry</SelectItem>
+                                <SelectItem value="FeasibilityApproved">Feasibility Approved</SelectItem>
+                                <SelectItem value="Rejected">Rejected</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="md:col-span-3 flex gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className={cn(
+                                    "w-full h-11 rounded-xl bg-slate-50 dark:bg-slate-800/50 border-none text-left font-normal",
+                                    !dateRange.from && "text-slate-400"
+                                )}>
+                                    <CalendarDays className="mr-2 h-4 w-4 opacity-50" />
+                                    {dateRange.from ? (
+                                        dateRange.to ? (
+                                            <>
+                                                {format(dateRange.from, "LLL dd")} - {format(dateRange.to, "LLL dd")}
+                                            </>
+                                        ) : (
+                                            format(dateRange.from, "LLL dd, y")
+                                        )
+                                    ) : (
+                                        <span>Filter by Date</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl" align="end">
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={dateRange.from}
+                                    selected={{ from: dateRange.from, to: dateRange.to }}
+                                    onSelect={(range: any) => setDateRange({ from: range?.from, to: range?.to })}
+                                    numberOfMonths={2}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <Button 
+                            variant="ghost" 
+                            onClick={resetFilters}
+                            className="w-full h-11 rounded-xl font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                        >
+                            <X className="mr-2 h-4 w-4" /> Reset
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-slate-900/50">
                 <CardHeader>
                     <CardTitle>Recent Inquiries</CardTitle>
-                    <CardDescription>
-                        Real-time list of customer inquiries from the database.
-                    </CardDescription>
+                    <CardDescription>Real-time list of customer inquiries from the database.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="overflow-auto">
@@ -439,14 +628,18 @@ export default function SalesInquiryPage() {
                                             <p className="mt-2 text-muted-foreground">Loading inquiries...</p>
                                         </TableCell>
                                     </TableRow>
-                                ) : inquiries.length === 0 ? (
+                                ) : filteredInquiries.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                                            No inquiries found. Create your first inquiry!
+                                        <TableCell colSpan={8} className="text-center py-20 text-muted-foreground">
+                                            <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                                                <Search className="h-12 w-12" />
+                                                <p className="font-bold">No matching inquiries found</p>
+                                                <Button variant="link" onClick={resetFilters} className="text-blue-600">Clear all filters</Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    inquiries.map((inquiry) => (
+                                    filteredInquiries.map((inquiry) => (
                                         <TableRow key={inquiry.id}>
                                             <TableCell className="font-medium">INQ-{inquiry.id.toString().padStart(4, '0')}</TableCell>
                                             <TableCell className="font-semibold">{inquiry.customerName}</TableCell>
@@ -456,17 +649,15 @@ export default function SalesInquiryPage() {
                                             <TableCell>{format(new Date(inquiry.inquiryDate), "dd MMM yyyy")}</TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className={cn(
-                                                    inquiry.status === "New" && "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-                                                    inquiry.status === "FeasibilityApproved" && "bg-blue-50 text-blue-700 border-blue-200",
-                                                    inquiry.status === "Rejected" && "bg-blue-50 text-blue-700 border-blue-200"
+                                                    inquiry.status === "New" && "bg-blue-50 text-blue-700 border-blue-200",
+                                                    inquiry.status === "FeasibilityApproved" && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                                    inquiry.status === "Rejected" && "bg-rose-50 text-rose-700 border-rose-200"
                                                 )}>
                                                     {inquiry.status}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon">
-                                                    <FileSearch className="h-4 w-4 text-blue-600" />
-                                                </Button>
+                                                <Button variant="ghost" size="icon"><FileSearch className="h-4 w-4 text-blue-600" /></Button>
                                             </TableCell>
                                         </TableRow>
                                     ))
