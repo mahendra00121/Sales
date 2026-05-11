@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5278/api";
+export const BASE_URL = "http://localhost:5278/api";
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   // Get token from localStorage (only available on client side)

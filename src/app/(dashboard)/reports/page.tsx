@@ -109,10 +109,10 @@ export default function ReportsPage() {
     }
 
     return (
-        <div className="space-y-6 p-2">
+        <div className="space-y-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-3">
+                    <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-3">
                          Analytics Control <LayoutDashboard className="h-8 w-8 text-blue-600" />
                     </h1>
                     <p className="text-muted-foreground font-medium">Deep-dive into operational performance and quality audits.</p>

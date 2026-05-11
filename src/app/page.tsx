@@ -18,6 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { BASE_URL } from "@/lib/api";
 
 const loginSchema = z.object({
   username: z.string().min(1, { message: "Username is required" }),
@@ -42,7 +43,7 @@ export default function LoginPage() {
   const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:5278/api/Auth/login", {
+      const response = await fetch(`${BASE_URL}/Auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

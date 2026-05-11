@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { fetchWithAuth } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +18,24 @@ import {
     Edit, 
     Users as UsersIcon,
     ShieldCheck,
-    Briefcase,
     HardHat,
     CheckCircle2,
     Lock,
-    Mail
+    Mail,
+    LayoutDashboard,
+    TrendingUp,
+    Factory,
+    Truck,
+    Leaf,
+    Settings2,
+    Monitor,
+    Briefcase,
+    Eye,
+    EyeOff
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { PageWrapper } from "@/components/PageWrapper";
 import {
   Tabs,
   TabsContent,
@@ -47,14 +62,25 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type User = {
     id: number;
     username: string;
     fullName: string;
+    email: string;
     role: string;
     createdAt: string;
 };
+
+// Form Schema
+const userSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    fullName: z.string().min(2, "Full name is required"),
+    email: z.string().email("Invalid email address").optional().or(z.literal("")),
+    password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
+    role: z.string().min(1, "Role is required"),
+});
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -62,11 +88,6 @@ export default function UsersPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     
-    // Form States
-    const [username, setUsername] = useState("");
-    const [fullName, setFullName] = useState("");
-    const [password, setPassword] = useState("");
-    const [role, setRole] = useState("User");
     const [permissions, setPermissions] = useState<any[]>([]);
     const [templates, setTemplates] = useState<any[]>([]);
     const [isSavingPerms, setIsSavingPerms] = useState(false);
@@ -74,6 +95,19 @@ export default function UsersPage() {
     const [editingTemplate, setEditingTemplate] = useState<any>(null);
 
     const [mounted, setMounted] = useState(false);
+
+    const form = useForm<z.infer<typeof userSchema>>({
+        resolver: zodResolver(userSchema),
+        defaultValues: {
+            username: "",
+            fullName: "",
+            email: "",
+            password: "",
+            role: "User",
+        },
+    });
+
+    const { register, handleSubmit, setValue, watch, formState: { errors }, reset: resetFormState } = form;
 
     const roles = ["Admin", "Sales", "Production", "User"];
     const modules = ["Overview", "Pre-Sales", "Production", "Logistics", "Sustainability", "Configuration"];
@@ -100,11 +134,22 @@ export default function UsersPage() {
         fetchUsers(); 
     }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const payload = { username, fullName, password, role, id: editingUser?.id || 0 };
+    const resetForm = () => {
+        setEditingUser(null);
+        resetFormState({
+            username: "",
+            fullName: "",
+            email: "",
+            password: "",
+            role: "User",
+        });
+    };
+
+    const handleUserSubmit = async (values: z.infer<typeof userSchema>) => {
+        setIsLoading(true);
+        const payload = { ...values, id: editingUser?.id || 0 };
         const method = editingUser ? "PUT" : "POST";
-        const url = editingUser ? `/User/${editingUser.id}` : "/User";
+        const url = editingUser ? `/User/${editingUser.id}` : "/Auth/register";
 
         try {
             const res = await fetchWithAuth(url, {
@@ -114,16 +159,18 @@ export default function UsersPage() {
             });
 
             if (res.ok) {
-                alert(editingUser ? "User updated!" : "User created!");
+                toast.success(editingUser ? "User account updated successfully!" : "New user account created!");
                 setIsModalOpen(false);
                 resetForm();
                 fetchUsers();
             } else {
                 const err = await res.text();
-                alert(err || "Operation failed");
+                toast.error(err || "Operation failed. Please try again.");
             }
         } catch (error) {
             console.error("User op error:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -131,27 +178,15 @@ export default function UsersPage() {
         if (!confirm("Are you sure you want to delete this user?")) return;
         try {
             const res = await fetchWithAuth(`/User/${id}`, { method: "DELETE" });
-            if (res.ok) fetchUsers();
-            else alert(await res.text());
+            if (res.ok) {
+                toast.success("User deleted successfully.");
+                fetchUsers();
+            }
+            else toast.error(await res.text());
         } catch (error) {
             console.error("Delete error:", error);
+            toast.error("Failed to delete user.");
         }
-    };
-
-    const resetForm = () => {
-        setEditingUser(null);
-        setUsername("");
-        setFullName("");
-        setPassword("");
-        setRole("User");
-    };
-
-    const openEdit = (u: User) => {
-        setEditingUser(u);
-        setUsername(u.username);
-        setFullName(u.fullName);
-        setRole(u.role);
-        setIsModalOpen(true);
     };
 
     const togglePermission = (roleName: string, moduleName: string) => {
@@ -173,7 +208,7 @@ export default function UsersPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(permissions)
             });
-            if (res.ok) alert("Permissions saved! Refresh page to see changes.");
+            if (res.ok) toast.success("Module visibility permissions updated!");
         } catch (error) {
             console.error("Save perms error:", error);
         } finally {
@@ -191,7 +226,7 @@ export default function UsersPage() {
                 body: JSON.stringify(editingTemplate)
             });
             if (res.ok) {
-                alert("Template updated!");
+                toast.success("Email template customized successfully!");
                 setEditingTemplate(null);
                 fetchUsers();
             }
@@ -202,10 +237,11 @@ export default function UsersPage() {
         }
     };
 
-    if (isLoading || !mounted) return <div className="h-[80vh] flex items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-blue-600" /></div>;
+    if (!mounted) return null;
 
     return (
-        <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
+        <PageWrapper>
+            <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight flex items-center gap-3 text-slate-900 dark:text-slate-100">
@@ -216,62 +252,141 @@ export default function UsersPage() {
             </div>
 
             <Tabs defaultValue="users" className="w-full">
-                <TabsList className="bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl h-auto mb-8">
-                    <TabsTrigger value="users" className="rounded-xl py-3 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold">
-                        <UsersIcon className="h-4 w-4 mr-2" /> User Accounts
-                    </TabsTrigger>
-                    <TabsTrigger value="permissions" className="rounded-xl py-3 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold">
-                        <Lock className="h-4 w-4 mr-2" /> Role Permissions
-                    </TabsTrigger>
-                    <TabsTrigger value="emails" className="rounded-xl py-3 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold">
-                        <Mail className="h-4 w-4 mr-2" /> Email Templates
-                    </TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
+                    <TabsList className="bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl h-auto mb-4 inline-flex min-w-full md:min-w-0">
+                        <TabsTrigger value="users" className="flex-1 rounded-xl py-3 px-4 md:px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold whitespace-nowrap text-sm">
+                            <UsersIcon className="h-4 w-4 mr-2" /> User Accounts
+                        </TabsTrigger>
+                        <TabsTrigger value="permissions" className="flex-1 rounded-xl py-3 px-4 md:px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold whitespace-nowrap text-sm">
+                            <Lock className="h-4 w-4 mr-2" /> Role Permissions
+                        </TabsTrigger>
+                        <TabsTrigger value="emails" className="flex-1 rounded-xl py-3 px-4 md:px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold whitespace-nowrap text-sm">
+                            <Mail className="h-4 w-4 mr-2" /> Email Templates
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-                <TabsContent value="users" className="space-y-8">
-                    <div className="flex justify-end">
+                <TabsContent value="users" className="space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h2 className="text-xl font-black text-slate-800 dark:text-slate-200">Active Directory</h2>
                         <Dialog open={isModalOpen} onOpenChange={(open) => { setIsModalOpen(open); if (!open) resetForm(); }}>
                             <DialogTrigger asChild>
-                                <Button className="bg-blue-600 hover:bg-blue-700 font-bold rounded-xl h-12 px-6 shadow-lg shadow-blue-100 dark:shadow-none">
+                                <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 font-bold rounded-xl h-12 px-6 shadow-lg shadow-blue-100 dark:shadow-none">
                                     <UserPlus className="mr-2 h-5 w-5" /> Add New User
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="rounded-3xl sm:max-w-[400px]">
-                                <DialogHeader>
-                                    <DialogTitle className="text-2xl font-black">{editingUser ? "Edit User" : "Create Account"}</DialogTitle>
-                                </DialogHeader>
-                                <form onSubmit={handleSubmit} className="space-y-6 py-4">
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase text-slate-400 px-1">Username</label>
-                                            <Input value={username} onChange={e => setUsername(e.target.value)} disabled={!!editingUser} placeholder="e.g. john_doe" className="h-12 rounded-xl" />
+                            <DialogContent className="rounded-[2.5rem] w-[95vw] sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl">
+                                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                                        <UsersIcon className="h-32 w-32" />
+                                    </div>
+                                    <div className="relative z-10 flex items-center gap-4">
+                                        <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl">
+                                            <UserPlus className="h-6 w-6 text-white" />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase text-slate-400 px-1">Full Name</label>
-                                            <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. John Doe" className="h-12 rounded-xl" />
+                                        <div>
+                                            <DialogTitle className="text-2xl font-black">{editingUser ? "Edit Profile" : "Create Account"}</DialogTitle>
+                                            <p className="text-blue-100 text-xs font-bold mt-1">
+                                                {editingUser ? "Update user credentials and role" : "Setup a new professional account"}
+                                            </p>
                                         </div>
+                                    </div>
+                                </div>
+                                <form onSubmit={handleSubmit(handleUserSubmit)} className="p-8 space-y-6 bg-white dark:bg-slate-900">
+                                    <div className="space-y-5">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase text-slate-400 px-1">{editingUser ? "New Password (optional)" : "Password"}</label>
-                                            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="******" className="h-12 rounded-xl" />
+                                            <label className={cn("text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 flex justify-between", errors.username && "text-rose-500")}>
+                                                Username
+                                                {errors.username && <span className="lowercase font-bold">! {errors.username.message}</span>}
+                                            </label>
+                                            <div className="relative group">
+                                                <UsersIcon className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-focus-within:text-blue-600", errors.username && "text-rose-400")} />
+                                                <Input 
+                                                    {...register("username")} 
+                                                    disabled={!!editingUser} 
+                                                    placeholder="e.g. john_doe" 
+                                                    className={cn("h-12 pl-11 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-2 focus-visible:ring-blue-600 transition-all", errors.username && "ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20")} 
+                                                />
+                                            </div>
                                         </div>
+
                                         <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase text-slate-400 px-1">System Role</label>
-                                            <Select value={role} onValueChange={setRole}>
-                                                <SelectTrigger className="h-12 rounded-xl">
-                                                    <SelectValue placeholder="Select Role" />
+                                            <label className={cn("text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 flex justify-between", errors.fullName && "text-rose-500")}>
+                                                Full Name
+                                                {errors.fullName && <span className="lowercase font-bold">! {errors.fullName.message}</span>}
+                                            </label>
+                                            <div className="relative group">
+                                                <UserPlus className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-focus-within:text-blue-600", errors.fullName && "text-rose-400")} />
+                                                <Input 
+                                                    {...register("fullName")} 
+                                                    placeholder="e.g. John Doe" 
+                                                    className={cn("h-12 pl-11 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-2 focus-visible:ring-blue-600 transition-all", errors.fullName && "ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20")} 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className={cn("text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 flex justify-between", errors.email && "text-rose-500")}>
+                                                Email Address
+                                                {errors.email && <span className="lowercase font-bold">! {errors.email.message}</span>}
+                                            </label>
+                                            <div className="relative group">
+                                                <Mail className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-focus-within:text-blue-600", errors.email && "text-rose-400")} />
+                                                <Input 
+                                                    {...register("email")} 
+                                                    placeholder="e.g. john@polytrack.com" 
+                                                    className={cn("h-12 pl-11 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-2 focus-visible:ring-blue-600 transition-all", errors.email && "ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20")} 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className={cn("text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 flex justify-between", errors.password && "text-rose-500")}>
+                                                Password {editingUser && "(Optional)"}
+                                                {errors.password && <span className="lowercase font-bold">! {errors.password.message}</span>}
+                                            </label>
+                                            <div className="relative group">
+                                                <Lock className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 transition-colors group-focus-within:text-blue-600", errors.password && "text-rose-400")} />
+                                                <Input 
+                                                    type="password" 
+                                                    {...register("password")} 
+                                                    placeholder="••••••" 
+                                                    className={cn("h-12 pl-11 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-2 focus-visible:ring-blue-600 transition-all", errors.password && "ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20")} 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Access Role</label>
+                                            <Select value={watch("role")} onValueChange={v => setValue("role", v)}>
+                                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-blue-600 transition-all">
+                                                    <div className="flex items-center gap-3">
+                                                        <Shield className="h-4 w-4 text-blue-600" />
+                                                        <SelectValue placeholder="Select Role" />
+                                                    </div>
                                                 </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Admin">Admin (Full Access)</SelectItem>
-                                                    <SelectItem value="Sales">Sales (Inquiry Only)</SelectItem>
-                                                    <SelectItem value="Production">Production (Jobs Only)</SelectItem>
-                                                    <SelectItem value="User">Regular User</SelectItem>
+                                                <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
+                                                    <SelectItem value="Admin" className="rounded-xl focus:bg-blue-50 focus:text-blue-600 cursor-pointer py-3">Administrator</SelectItem>
+                                                    <SelectItem value="Sales" className="rounded-xl focus:bg-blue-50 focus:text-blue-600 cursor-pointer py-3">Sales Manager</SelectItem>
+                                                    <SelectItem value="Production" className="rounded-xl focus:bg-blue-50 focus:text-blue-600 cursor-pointer py-3">Production Manager</SelectItem>
+                                                    <SelectItem value="User" className="rounded-xl focus:bg-blue-50 focus:text-blue-600 cursor-pointer py-3">Standard User</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                     </div>
-                                    <DialogFooter>
-                                        <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 font-black rounded-xl">
-                                            {editingUser ? "Update Account" : "Create Account"}
+
+                                    <DialogFooter className="pt-4">
+                                        <Button type="submit" disabled={isLoading} className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-200 dark:shadow-none border-none transition-all hover:scale-[1.02] active:scale-95 group">
+                                            {isLoading ? (
+                                                <Loader2 className="animate-spin h-6 w-6" />
+                                            ) : (
+                                                <>
+                                                    <span className="flex-1">{editingUser ? "Update Account" : "Initialize Account"}</span>
+                                                    <div className="bg-white/20 p-2 rounded-xl group-hover:bg-white/30 transition-colors">
+                                                        <CheckCircle2 className="h-5 w-5" />
+                                                    </div>
+                                                </>
+                                            )}
                                         </Button>
                                     </DialogFooter>
                                 </form>
@@ -280,7 +395,24 @@ export default function UsersPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {users.map(user => (
+                        {isLoading ? (
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <Card key={i} className="border-none shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-slate-900/50 p-6 space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <Skeleton className="h-14 w-14 rounded-full" />
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-5 w-32" />
+                                            <Skeleton className="h-4 w-20" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="h-12 w-full rounded-2xl" />
+                                    <div className="flex gap-2">
+                                        <Skeleton className="h-10 flex-1 rounded-xl" />
+                                        <Skeleton className="h-10 flex-1 rounded-xl" />
+                                    </div>
+                                </Card>
+                            ))
+                        ) : users.map(user => (
                             <Card key={user.id} className="border-none shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl overflow-hidden group bg-white dark:bg-slate-900/50">
                                 <div className={`h-2 ${user.role === 'Admin' ? 'bg-rose-500' : 'bg-blue-600'}`} />
                                 <CardHeader className="flex flex-row items-center gap-4">
@@ -291,8 +423,11 @@ export default function UsersPage() {
                                     </Avatar>
                                     <div className="flex-1">
                                         <CardTitle className="text-lg font-black">{user.fullName}</CardTitle>
-                                        <CardDescription className="font-bold flex items-center gap-1">
-                                            @{user.username}
+                                        <CardDescription className="font-bold flex flex-col gap-0.5">
+                                            <span className="text-blue-600">@{user.username}</span>
+                                            <span className="text-[11px] text-slate-500 lowercase flex items-center gap-1">
+                                                <Mail className="h-3 w-3" /> {user.email || 'no-email@polytrack.com'}
+                                            </span>
                                         </CardDescription>
                                     </div>
                                 </CardHeader>
@@ -310,7 +445,17 @@ export default function UsersPage() {
                                     </div>
 
                                     <div className="flex gap-2">
-                                        <Button variant="secondary" onClick={() => openEdit(user)} className="flex-1 rounded-xl font-bold bg-blue-50 text-blue-600 hover:bg-blue-100">
+                                        <Button variant="secondary" onClick={() => {
+                                            setEditingUser(user);
+                                            resetFormState({
+                                                username: user.username,
+                                                fullName: user.fullName,
+                                                email: user.email || "",
+                                                role: user.role,
+                                                password: "",
+                                            });
+                                            setIsModalOpen(true);
+                                        }} className="flex-1 rounded-xl font-bold bg-blue-50 text-blue-600 hover:bg-blue-100">
                                             <Edit className="h-4 w-4 mr-2" /> Edit
                                         </Button>
                                         <Button variant="secondary" onClick={() => handleDelete(user.id)} className="flex-1 rounded-xl font-bold bg-rose-50 text-rose-600 hover:bg-rose-100">
@@ -324,57 +469,102 @@ export default function UsersPage() {
                 </TabsContent>
 
                 <TabsContent value="permissions">
-                    <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-slate-900/50">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle className="text-xl font-black">Role Visibility Matrix</CardTitle>
-                                <CardDescription>Configure which modules each role can access in the sidebar.</CardDescription>
+                    <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50">
+                        <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-500/20">
+                                    <Shield className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-2xl font-black">Visibility Matrix</CardTitle>
+                                    <p className="text-slate-400 text-xs font-bold mt-1">Configure which modules are visible to each user role.</p>
+                                </div>
                             </div>
                             <Button 
                                 onClick={savePermissions} 
                                 disabled={isSavingPerms}
-                                className="bg-blue-600 hover:bg-blue-700 font-black rounded-xl h-12 px-8"
+                                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 font-black rounded-xl h-12 px-8 shadow-xl shadow-blue-500/10 border-none transition-all active:scale-95"
                             >
                                 {isSavingPerms ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <CheckCircle2 className="h-5 w-5 mr-2" />}
-                                Save Visibility Settings
+                                Update Permissions
                             </Button>
-                        </CardHeader>
-                        <CardContent>
+                        </div>
+                        <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
-                                            <TableHead className="w-[200px] font-black uppercase text-[10px] tracking-widest text-slate-400">Module Group</TableHead>
+                                        <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                                            <TableHead className="w-[300px] py-6 px-8 font-black uppercase text-[10px] tracking-widest text-slate-400">
+                                                Module / Feature Group
+                                            </TableHead>
                                             {roles.map(r => (
-                                                <TableHead key={r} className="text-center font-black uppercase text-[10px] tracking-widest text-slate-400">
-                                                    {r}
+                                                <TableHead key={r} className="text-center py-6 px-4">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <div className={cn(
+                                                            "p-2 rounded-lg",
+                                                            r === 'Admin' ? "bg-rose-100 text-rose-600" : 
+                                                            r === 'Sales' ? "bg-blue-100 text-blue-600" :
+                                                            r === 'Production' ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-600"
+                                                        )}>
+                                                            {r === 'Admin' ? <Shield className="h-4 w-4" /> : 
+                                                             r === 'Sales' ? <TrendingUp className="h-4 w-4" /> :
+                                                             r === 'Production' ? <Factory className="h-4 w-4" /> : <UsersIcon className="h-4 w-4" />}
+                                                        </div>
+                                                        <span className="font-black uppercase text-[10px] tracking-widest">{r}</span>
+                                                    </div>
                                                 </TableHead>
                                             ))}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {modules.map(module => (
-                                            <TableRow key={module} className="border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                                <TableCell className="font-bold text-slate-700 dark:text-slate-300">
-                                                    {module}
-                                                </TableCell>
-                                                {roles.map(role => {
-                                                    const isVisible = permissions.find(p => p.roleName === role && p.moduleName === module)?.isVisible;
-                                                    return (
-                                                        <TableCell key={role} className="text-center">
-                                                            <div className="flex justify-center">
-                                                                <Switch 
-                                                                    checked={isVisible} 
-                                                                    onCheckedChange={() => togglePermission(role, module)}
-                                                                    disabled={role === 'Admin' && module === 'Configuration'} // Don't lock admin out of config
-                                                                    className="data-[state=checked]:bg-blue-600"
-                                                                />
+                                        {modules.map((module, mIdx) => {
+                                            const moduleIcons: Record<string, any> = {
+                                                'Overview': LayoutDashboard,
+                                                'Pre-Sales': Briefcase,
+                                                'Production': Factory,
+                                                'Logistics': Truck,
+                                                'Sustainability': Leaf,
+                                                'Configuration': Settings2
+                                            };
+                                            const Icon = moduleIcons[module] || Monitor;
+                                            
+                                            return (
+                                                <TableRow key={module} className="border-slate-100 dark:border-slate-800 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group">
+                                                    <TableCell className="py-5 px-8">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-xl group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 group-hover:text-blue-600 transition-colors">
+                                                                <Icon className="h-5 w-5" />
                                                             </div>
-                                                        </TableCell>
-                                                    );
-                                                })}
-                                            </TableRow>
-                                        ))}
+                                                            <div>
+                                                                <span className="font-bold text-slate-700 dark:text-slate-300 block">{module}</span>
+                                                                <span className="text-[10px] text-slate-400 font-medium">Control access to {module.toLowerCase()} features</span>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    {roles.map(role => {
+                                                        const isVisible = permissions.find(p => p.roleName === role && p.moduleName === module)?.isVisible;
+                                                        return (
+                                                            <TableCell key={role} className="text-center">
+                                                                <div className="flex flex-col items-center gap-2">
+                                                                    <Switch 
+                                                                        checked={isVisible} 
+                                                                        onCheckedChange={() => togglePermission(role, module)}
+                                                                        disabled={role === 'Admin' && module === 'Configuration'} 
+                                                                        className="data-[state=checked]:bg-blue-600"
+                                                                    />
+                                                                    <span className={cn(
+                                                                        "text-[9px] font-black uppercase tracking-tighter",
+                                                                        isVisible ? "text-blue-600" : "text-slate-300"
+                                                                    )}>
+                                                                        {isVisible ? "Visible" : "Hidden"}
+                                                                    </span>
+                                                                </div>
+                                                            </TableCell>
+                                                        );
+                                                    })}
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -448,5 +638,6 @@ export default function UsersPage() {
                 </TabsContent>
             </Tabs>
         </div>
+        </PageWrapper>
     );
 }

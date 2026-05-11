@@ -117,10 +117,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8 p-2">
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100 border-l-8 border-l-blue-600 pl-6">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100 border-l-8 border-l-blue-600 pl-6">
             PolyTrack Control Center
           </h1>
           <p className="text-muted-foreground mt-1 ml-6 font-medium">
@@ -200,9 +200,9 @@ export default function DashboardPage() {
         <Card className="col-span-4 border-none shadow-xl rounded-3xl bg-white dark:bg-slate-900 overflow-hidden">
             <CardHeader>
                 <CardTitle className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-blue-600" /> Inquiry Velocity
+                    <Activity className="h-5 w-5 text-blue-600" /> Monthly Inquiry Trend
                 </CardTitle>
-                <CardDescription>Monthly lead generation performance (Last 6 Months)</CardDescription>
+                <CardDescription>Historical data of leads received (Last 6 Months)</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -226,7 +226,17 @@ export default function DashboardPage() {
                             tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 700}} 
                         />
                         <Tooltip 
-                            contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-2xl border-none ring-1 ring-slate-100 dark:ring-slate-700 animate-in fade-in zoom-in duration-200">
+                                            <p className="text-[10px] font-black uppercase text-slate-400 mb-1">{payload[0].payload.month}</p>
+                                            <p className="text-xl font-black text-blue-600">{payload[0].value} <span className="text-[10px] text-slate-400">Leads</span></p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
                         />
                         <Area 
                             type="monotone" 
@@ -235,6 +245,7 @@ export default function DashboardPage() {
                             strokeWidth={4}
                             fillOpacity={1} 
                             fill="url(#colorCount)" 
+                            activeDot={{ r: 8, stroke: '#fff', strokeWidth: 4, className: "shadow-xl" }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
@@ -249,28 +260,45 @@ export default function DashboardPage() {
                 </CardTitle>
                 <CardDescription>Distribution of active inquiries</CardDescription>
             </CardHeader>
-            <CardContent className="h-[300px] w-full">
+            <CardContent className="h-[300px] w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
                             data={analytics?.statusDistribution || []}
                             cx="50%"
                             cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
+                            innerRadius={70}
+                            outerRadius={95}
+                            paddingAngle={8}
                             dataKey="value"
+                            stroke="none"
                         >
                             {analytics?.statusDistribution?.map((entry: any, index: number) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
                             ))}
                         </Pie>
                         <Tooltip 
-                            contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-2xl border-none ring-1 ring-slate-100 dark:ring-slate-700">
+                                            <p className="text-[10px] font-black uppercase text-slate-400 mb-1">{payload[0].name}</p>
+                                            <p className="text-lg font-black text-slate-900 dark:text-slate-100">{payload[0].value} <span className="text-[10px] text-slate-400 font-medium">Items</span></p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
                         />
-                        <Legend verticalAlign="bottom" height={36}/>
                     </PieChart>
                 </ResponsiveContainer>
+                {/* Center Label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-16">
+                    <span className="text-3xl font-black text-slate-900 dark:text-slate-100">
+                        {analytics?.statusDistribution?.reduce((acc: number, curr: any) => acc + curr.value, 0) || 0}
+                    </span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Active</span>
+                </div>
             </CardContent>
         </Card>
       </div>

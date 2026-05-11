@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
     Card,
     CardContent,
@@ -37,6 +38,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { fetchWithAuth } from "@/lib/api";
 import {
     Dialog,
@@ -65,6 +67,7 @@ export default function WastePage() {
     const [wasteLogs, setWasteLogs] = useState<WasteRecord[]>([]);
     const [isFetching, setIsFetching] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [open, setOpen] = useState(false);
 
     // Form States
@@ -124,18 +127,25 @@ export default function WastePage() {
     };
 
     const handleUpdateStatus = async (id: number, action: string) => {
+        setUpdatingId(id);
         try {
-            const response = await fetch(`http://localhost:5278/api/WasteRecord/${id}`, {
+            const response = await fetchWithAuth(`/WasteRecord/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(action),
             });
 
             if (response.ok) {
+                toast.success(`Scrap successfully ${action === 'Recycled' ? 'sent for grinding' : 'disposed'}`);
                 await fetchData();
+            } else {
+                toast.error("Failed to update scrap status.");
             }
         } catch (error) {
             console.error("Update error:", error);
+            toast.error("Error connecting to server.");
+        } finally {
+            setUpdatingId(null);
         }
     };
 
@@ -143,10 +153,10 @@ export default function WastePage() {
     const recycledWaste = wasteLogs.filter(l => l.actionTaken === 'Recycled').reduce((acc, curr) => acc + curr.weight, 0);
 
     return (
-        <div className="space-y-6 p-2">
+        <div className="space-y-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 border-l-8 border-l-emerald-500 pl-6">Waste & Material Recovery</h1>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-100 border-l-8 border-l-emerald-500 pl-6">Waste & Material Recovery</h1>
                     <p className="text-muted-foreground font-medium ml-6">Track production scrap cycles and regrind sustainability.</p>
                 </div>
                 <Dialog open={open} onOpenChange={setOpen}>
@@ -271,17 +281,35 @@ export default function WastePage() {
                                             </TableCell>
                                             <TableCell className="font-black text-lg">{log.weight} <span className="text-[10px] text-slate-400">kg</span></TableCell>
                                             <TableCell>
-                                                <Badge className={log.actionTaken === 'Pending' ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"}>
+                                                <Badge variant="outline" className={cn(
+                                                    "font-bold px-3 py-1 rounded-full border-none",
+                                                    log.actionTaken === 'Pending' && "bg-amber-100 text-amber-700",
+                                                    log.actionTaken === 'Recycled' && "bg-emerald-100 text-emerald-700",
+                                                    log.actionTaken === 'Disposed' && "bg-rose-100 text-rose-700"
+                                                )}>
                                                     {log.actionTaken}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 {log.actionTaken === "Pending" && (
                                                     <div className="flex justify-end gap-2">
-                                                        <Button size="sm" variant="outline" className="h-8 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold" onClick={() => handleUpdateStatus(log.id, "Recycled")}>
-                                                            <RefreshCcw className="mr-1 h-3 w-3" /> Grind
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="outline" 
+                                                            className="h-8 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold" 
+                                                            onClick={() => handleUpdateStatus(log.id, "Recycled")}
+                                                            disabled={updatingId === log.id}
+                                                        >
+                                                            {updatingId === log.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCcw className="mr-1 h-3 w-3" />} 
+                                                            Grind
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" className="h-8 text-rose-600 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20" onClick={() => handleUpdateStatus(log.id, "Disposed")}>
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="ghost" 
+                                                            className="h-8 text-rose-600 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20" 
+                                                            onClick={() => handleUpdateStatus(log.id, "Disposed")}
+                                                            disabled={updatingId === log.id}
+                                                        >
                                                             Dispose
                                                         </Button>
                                                     </div>

@@ -236,6 +236,10 @@ export function Sidebar() {
         </div>
     );
 
+    if (!mounted) {
+        return <div className={cn("hidden md:block border-r bg-card h-full flex-shrink-0", collapsed ? "w-16" : "w-64")} />;
+    }
+
     return (
         <>
             {/* Desktop Sidebar */}

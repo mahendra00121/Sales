@@ -77,6 +77,7 @@ export default function ProcurementPage() {
     const [newItemName, setNewItemName] = useState("PET Sheet Roll");
     const [newVendor, setNewVendor] = useState("");
     const [newQty, setNewQty] = useState(0);
+    const [qcNotes, setQcNotes] = useState("");
 
     const fetchData = async () => {
         try {
@@ -134,21 +135,34 @@ export default function ProcurementPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`http://localhost:5278/api/Procurement/${selectedBatch.id}`, {
+            // Clean the object for backend submission
+            const payload = {
+                ...selectedBatch,
+                qcStatus: decision,
+                qcNotes: qcNotes
+            };
+            
+            // Remove navigation properties if they exist to avoid validation/circularity issues
+            delete (payload as any).productionPlan;
+
+            const response = await fetchWithAuth(`/Procurement/${selectedBatch.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...selectedBatch,
-                    qcStatus: decision
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (response.ok) {
                 await fetchData();
                 setQcOpen(false);
+                setQcNotes(""); // Reset notes
+            } else {
+                const errorText = await response.text();
+                console.error("QC Update failed:", errorText);
+                alert("Failed to update QC status. Check console for details.");
             }
         } catch (error) {
             console.error("QC error:", error);
+            alert("Network error during QC submission.");
         } finally {
             setIsLoading(false);
         }
@@ -294,11 +308,22 @@ export default function ProcurementPage() {
                             <div className="space-y-2"><Label>Thickness (Measured)</Label><Input placeholder="0.52mm" /></div>
                             <div className="space-y-2"><Label>Moisture Content %</Label><Input placeholder="0.05%" /></div>
                         </div>
-                        <div className="space-y-2"><Label>Technical Remarks</Label><Textarea placeholder="Lab observations..." /></div>
+                        <div className="space-y-2">
+                            <Label>Technical Remarks</Label>
+                            <Textarea 
+                                placeholder="Lab observations..." 
+                                value={qcNotes}
+                                onChange={(e) => setQcNotes(e.target.value)}
+                            />
+                        </div>
                     </div>
                     <DialogFooter className="gap-2">
-                        <Button variant="destructive" onClick={() => handleQCSubmit('Rejected')}>Reject Batch</Button>
-                        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => handleQCSubmit('Approved')}>Approve & Store</Button>
+                        <Button variant="destructive" onClick={() => handleQCSubmit('Rejected')} disabled={isLoading}>
+                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject Batch"}
+                        </Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => handleQCSubmit('Approved')} disabled={isLoading}>
+                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Approve & Store"}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

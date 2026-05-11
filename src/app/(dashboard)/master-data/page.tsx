@@ -267,24 +267,24 @@ export default function MasterDataPage() {
             </div>
 
             <Tabs defaultValue="ProductType" onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 max-w-[1000px]">
-                    <TabsTrigger value="ProductType" className="flex items-center gap-2">
+                <TabsList className="flex w-full items-center justify-start overflow-x-auto no-scrollbar bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl h-auto min-h-[50px] gap-2">
+                    <TabsTrigger value="ProductType" className="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 shadow-sm transition-all">
                         <Box className="h-4 w-4" />
                         Product Types
                     </TabsTrigger>
-                    <TabsTrigger value="MaterialPreference" className="flex items-center gap-2">
+                    <TabsTrigger value="MaterialPreference" className="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 shadow-sm transition-all">
                         <Layers className="h-4 w-4" />
                         Materials
                     </TabsTrigger>
-                    <TabsTrigger value="MachineAllocation" className="flex items-center gap-2">
+                    <TabsTrigger value="MachineAllocation" className="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 shadow-sm transition-all">
                         <Cpu className="h-4 w-4" />
                         Machines
                     </TabsTrigger>
-                    <TabsTrigger value="MoldTooling" className="flex items-center gap-2">
+                    <TabsTrigger value="MoldTooling" className="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 shadow-sm transition-all">
                         <Wrench className="h-4 w-4" />
                         Molds / Tooling
                     </TabsTrigger>
-                    <TabsTrigger value="PackingMaterial" className="flex items-center gap-2">
+                    <TabsTrigger value="PackingMaterial" className="flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 shadow-sm transition-all">
                         <Package className="h-4 w-4" />
                         Packing Materials
                     </TabsTrigger>
